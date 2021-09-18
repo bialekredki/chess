@@ -1,0 +1,21 @@
+{% extends 'main.html' %}
+
+{%block sitecontent%}
+    <h3>{{user.username}}</h3>
+    {%if not user.has_avatar%}  
+    <img src="{{url_for('static', filename='img/avatar/empty.png')}}">
+    {%endif%}
+    <p>Joined:{{time_since}}</p>
+    <div id='games-container'>
+        {%for game in games%}
+            {%if user.username != game.host.username%}
+                {% set oponent = game.host%}
+            {%else%}
+                {% set oponent = game.guest%}
+            {%endif%}
+            <div class='game-container'>
+                <span>{{game.timestamp}}:{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
+            </div>
+        {%endfor%}
+    </div>
+{%endblock%}

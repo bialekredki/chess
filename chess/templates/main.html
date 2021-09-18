@@ -1,0 +1,28 @@
+{%extends 'bootstrap/base.html'%}
+
+
+{%block title%}
+    {%if title%} {{title}} {% endif %}
+{%endblock%}
+
+{%block navbar%} <nav class='navbar navbar-default'> 
+        <div class='navbar-container'>
+            <span><a href="{{url_for('index')}}">Home</a></span>
+            <span><a href="{{url_for('play')}}">Play</a></span>
+            <span><a href="{{url_for('blog')}}">Learn</a></span>
+            {%if current_user.is_anonymous%}
+                <span><a href="{{url_for('login')}}">Login</a></span>
+                <span><a href="{{url_for('create_account')}}">Register</span></a>
+            {%else%}
+                <span><a href="{{url_for('user', username=current_user.username)}}">{{current_user.username}}</a></span>
+                <span><a href="{{url_for('logout')}}">Sign out</a></span>
+            {%endif%}
+        </div>
+    </nav>
+{%endblock%}
+
+{%block content%}
+    <div class='container'>
+        {%block sitecontent%}{%endblock%}
+    </div>
+{%endblock%}

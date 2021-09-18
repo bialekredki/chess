@@ -1,0 +1,2 @@
+from chess import app
+

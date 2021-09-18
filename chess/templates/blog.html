@@ -1,0 +1,13 @@
+{% extends 'main.html' %}
+
+{%block sitecontent%}
+    {%for post in posts%}
+
+        <div>
+            <p> {{post.author.username}} says:<br>
+            {{post.timestamp}} </p>
+            <b>{{post.content}}</b>
+        </div>
+
+    {%endfor%}
+{%endblock%}
