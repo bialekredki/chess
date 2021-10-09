@@ -1,9 +1,47 @@
 {% extends 'main.html' %}
 
+{%block scripts%}
+    {{super()}}
+    {%if user.username == current_user.username%}
+    <script>
+        submit_img = (e) => {
+            console.log('Submit img')
+            console.log(e.files[0])
+            let f = e.files[0];
+            let formData = new FormData();
+            formData.append('user_id', {{current_user.id}})
+            formData.append('image', f)
+            $.ajax({
+                type:"POST",
+                url:"/submit_image",
+                async:true,
+                processData: false,
+                contentType: false,
+                data:formData,
+                timeout: 6000
+            })
+        }
+
+        $('img').on('click', () => {
+            $('#img-file-input').trigger('click');
+            console.log('Img field clicked')
+        });
+
+        $('img').addClass('editable')
+    </script>
+    {%endif%}
+{%endblock%}
+
 {%block sitecontent%}
     <h3>{{user.username}}</h3>
-    {%if not user.has_avatar%}  
-    <img src="{{url_for('static', filename='img/avatar/empty.png')}}">
+    {%if not user.has_avatar%}
+        <img src="{{url_for('static', filename='img/avatar/empty.png')}}">
+    {%else%}
+        {%set imgfile = "/img/avatar/{}.png".format(user.id)%}
+        <img src="{{url_for('static', filename=imgfile)}}">
+    {%endif%}
+    {%if user.username == current_user.username%}
+        <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
     {%endif%}
     <p>Joined:{{time_since}}</p>
     <div id='games-container'>
@@ -14,7 +52,7 @@
                 {% set oponent = game.guest%}
             {%endif%}
             <div class='game-container'>
-                <span>{{game.timestamp}}:{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
+                <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
             </div>
         {%endfor%}
     </div>

@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
+from flask_socketio import SocketIO
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -17,6 +18,9 @@ migrate = Migrate(app,db)
 login = LoginManager(app)
 login.login_view = 'login'
 bootstrap = Bootstrap(app)
-print(bootstrap)
+socketio = SocketIO(app)
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
 
 from chess import routes, models

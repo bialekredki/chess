@@ -1,13 +1,16 @@
 from datetime import datetime
 from flask.helpers import flash
+from flask.json import jsonify
 from flask_login.utils import login_required
 from chess import app, db
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, request
 from chess.forms import LoginForm, RegisterForm
 from chess.models import BlogPost, User, Game
 from flask_login import current_user, login_user, logout_user
 from chess.utils import round_datetime
 from sqlalchemy import or_
+import json
+import os.path
 
 
 
@@ -63,7 +66,41 @@ def user(username):
     time_since = round_datetime(datetime.utcnow() - user.joined)
     return render_template('user.html', user=user, posts=posts, time_since=time_since,games=games)
 
+@app.route('/submit_image', methods=['POST', "GET"])
+@login_required
+def submit_image():
+    for k,v in request.form.items():
+        print(f'{k}: {v}')
+    for k,v in request.files.items():
+        print(f'{k}: {v}')
+    image = request.files.get('image')
+    ALLOWED_EXTENSIONS = ['jpg', 'png', 'jpeg']
+    if image is None or image.filename == '' or '.' not in image.filename or image.filename.split('.', 1)[1].lower() not in ALLOWED_EXTENSIONS:
+        return
+    
+    user = User.query.get(request.form.get('user_id'))
+    print(user.has_avatar)
+    user.has_avatar = True
+    print(user.has_avatar)
+    db.session.commit()
+    filename = f'{user.id}.png'
+    image.save(os.path.join(os.path.realpath('chess/static/img/avatar/'), filename))
+    return jsonify({'XD':'xd'})
+
 @app.route('/play', methods=['GET', 'POST'])
 @login_required
 def play():
     return render_template('play.html')
+
+
+@app.route('/play/<id>')
+@login_required
+def game(id):
+    return render_template('game.html')
+
+def create_game(host,guest:User=None,type:int=0):
+    if guest is None: pass # look for a player
+    g = Game(host,guest)
+    db.session.add(g)
+    db.session.commit(g)
+    return redirect(f'/play/{g.id}')

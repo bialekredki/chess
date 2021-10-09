@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 
 def round_datetime(td:timedelta) -> str:
@@ -9,7 +9,7 @@ def round_datetime(td:timedelta) -> str:
         d,r = divmod(td.seconds,60*60)
         if d < 24: return f'{d} hour{is_plural(d)} ago'
         print('xd')
-    else: return 'now'
+    return 'now'
 
 def is_plural(value:int)->str:
     if value > 1: return 's'

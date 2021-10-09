@@ -11,6 +11,10 @@ from chess import login
 def load_user(id):
     return User.query.get(int(id))
 
+friends_table = db.Table('friends', 
+    db.Column('user1_id', db.Integer, db.ForeignKey('user.id')), 
+    db.Column('user2_id', db.Integer, db.ForeignKey('user.id')))
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -19,6 +23,10 @@ class User(UserMixin, db.Model):
     has_avatar = db.Column(db.Boolean, default=False)
     joined = db.Column(db.DateTime(128),default=datetime.utcnow)
     posts = db.relationship('BlogPost', backref='author', lazy='dynamic')
+    friends = db.relationship('User', secondary=friends_table,
+    primaryjoin=(friends_table.c.user1_id == id),
+    secondaryjoin=(friends_table.c.user2_id == id),
+    backref=db.backref('friends_table', lazy='dynamic'), lazy='dynamic')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -28,6 +36,15 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def add_friend(self, user):
+        if not self.is_friends_with(user): self.friends.append(user)
+
+    def remove_friend(self,user):
+        if self.is_friends_with(user): self.friends.remove(user)
+
+    def is_friends_with(self,user):
+        return self.friends.filter(friends_table.c.user1_id == user.id).count > 0 or self.friends.filter(friends_table.c.user2_id == user.id).count > 0
 
 class BlogPost(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,3 +70,5 @@ class Game(db.Model):
 
     def __repr__(self):
         return f'<Game at={self.timestamp} state={self.state} between {self.host}{self.guest}>'
+
+

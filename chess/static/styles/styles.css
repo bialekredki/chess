@@ -1,0 +1,4 @@
+.editable:hover {
+    opacity: 0.6;
+    border: solid black 2px;
+}
