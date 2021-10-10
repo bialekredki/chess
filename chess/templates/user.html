@@ -2,8 +2,9 @@
 
 {%block scripts%}
     {{super()}}
-    {%if user.username == current_user.username%}
     <script>
+    {%if user.username == current_user.username%}
+    
         submit_img = (e) => {
             console.log('Submit img')
             console.log(e.files[0])
@@ -21,15 +22,20 @@
                 timeout: 6000
             })
         }
-
         $('img').on('click', () => {
             $('#img-file-input').trigger('click');
             console.log('Img field clicked')
         });
 
         $('img').addClass('editable')
-    </script>
+    
     {%endif%}
+        {%if not current_user.is_anonymous and current_user.username != user.username%}
+            submit_friend_request = () => {
+                $.post('/me/add_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"})
+            }
+        {%endif%}
+    </script>
 {%endblock%}
 
 {%block sitecontent%}
@@ -43,7 +49,30 @@
     {%if user.username == current_user.username%}
         <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
     {%endif%}
+    <div style='display: inline'>
+        <table class='table' id='friends-table'>
+            <thead></thead>
+            <tbody>
+            {%for friend in user.friends%}
+                <tr>
+                    {%if friend.has_avatar%}
+                    <th>
+                        {%set imgfile = "/img/avatar/{}_mini.png".format(friend.id)%}
+                        <img src="{{url_for('static', filename=imgfile)}}">
+                    </th>
+                    {%endif%}
+                    <th>
+                        <a href="{{url_for('user', username=friend.username)}}">{{friend.username}}</a>
+                    </th>
+                </tr>
+            {%endfor%}
+            </tbody>
+        </table>
+    </div>
     <p>Joined:{{time_since}}</p>
+    {%if not current_user.is_anonymous and current_user.username != user.username%}
+        <input type='button' value='Add friend' onclick='submit_friend_request()'/>
+    {%endif%}
     <div id='games-container'>
         {%for game in games%}
             {%if user.username != game.host.username%}

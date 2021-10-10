@@ -23,10 +23,11 @@ class User(UserMixin, db.Model):
     has_avatar = db.Column(db.Boolean, default=False)
     joined = db.Column(db.DateTime(128),default=datetime.utcnow)
     posts = db.relationship('BlogPost', backref='author', lazy='dynamic')
+    messages = db.relationship('Message', backref='receiver', lazy='dynamic')
     friends = db.relationship('User', secondary=friends_table,
-    primaryjoin=(friends_table.c.user1_id == id),
-    secondaryjoin=(friends_table.c.user2_id == id),
-    backref=db.backref('friends_table', lazy='dynamic'), lazy='dynamic')
+        primaryjoin=(friends_table.c.user1_id == id),
+        secondaryjoin=(friends_table.c.user2_id == id),
+        backref=db.backref('friends_table', lazy='dynamic'), lazy='dynamic')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -54,6 +55,12 @@ class BlogPost(db.Model):
 
     def __repr__(self):
         return f'<Post {self.body}>'
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(1024))
+    timestamp = db.Column(db.DateTime(128), index=True, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)

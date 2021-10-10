@@ -1,12 +1,120 @@
+{%extends 'main.html'%}
 
-
+{%block head%}
+{{super()}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+<script src="https://pixijs.download/release/pixi.js"></script>
+{%endblock%}
 
-<script type="text/javascript" charset="utf-8">
+{%block scripts%}
+{{super()}}
+<script src="{{url_for('static', filename='js/game.js')}}"></script>
+<script>
+    pieceOnDragBegin = (event) => {
+        this.data = event.data;
+        this.alpha = 0.5;
+        this.dragging = true;
+        console.log(this.data);
+        renderApp(app, game, textures)
+    }
+    pieceOnDragEnd = () => {
+        this.aplha = 1;
+        this.dragging = false;
+        this.data = null;
+    }
+    pieceMove = () => {
+        if(this.dragging) {
+            const newPosition = this.data.getLocalPosition(this.parent);
+            this.x = newPosition.x;
+            this.y = newPosition.y;
+        }
+    }
+    renderApp = (app, game,textures) => {
+        let black_tile = 0x1c0a0f;
+        let white_tile = 0xdb9eaf;
+        let start_x = 0;
+        let start_y = 0;
+        let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
+        let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
+        let sprites = new Array();
+        const tiles = new PIXI.Graphics();
+        
+        for(let row = 7; row >= 0; row--){
+            for(let col = 0; col < 8; col++){
+                if(row % 2 == col % 2)  tiles.beginFill(white_tile);
+                else 
+                    tiles.beginFill(black_tile);
+                tiles.drawRect(start_x,start_y, size_x, size_y);
+                tiles.endFill();
+                if(game.isEmpty(row,col)) {
+                    start_x += size_x;
+                    continue;
+                }
+                let colour = 'w'
+                if(game.isBlack(row,col)) colour = 'b';
+                let name = `${colour}${game.getPiece(row,col, 'string')}`
+                sprites.push(PIXI.Sprite.from(textures[name]));
+                sprites.at(-1).anchor.set(0.5);
+                sprites.at(-1).x = start_x + size_x / 2;
+                sprites.at(-1).y = start_y + size_y / 2;
+                sprites.at(-1).interactive = true;
+                sprites.at(-1).buttonMode = true;
+                sprites.at(-1)
+                    .on('pointerdown', pieceOnDragBegin)
+                    .on('pointerup', pieceOnDragEnd)
+                    .on('pointerupoutside', pieceOnDragEnd)
+                    .on('pointermove', pieceMove);
+                start_x += size_x;
+            }
+            start_y += size_y;
+            start_x = 0;
+        }
+        app.stage.addChild(tiles);
+        sprites.forEach((sprite) => {
+            app.stage.addChild(sprite);
+        });
+
+    }
     var socket = io();
     socket.on('connect', function() {
-        socket.emit('my event', {data: 'I\'m connected!'});
+        console.log('XD');
     });
-</script>
 
-<div>Hello</div>
+        const app = new PIXI.Application({
+            width: 800,
+            height: 600,
+            backgroundColor: 0x000000,
+            resolution: window.devicePixelRation || 1,
+            antialias: true
+        });
+        console.log(app);
+        $('#root').append(app.view);
+        const container = new PIXI.Container();
+        app.stage.addChild(container);
+        let game_state = new Game();
+
+        let textures = {'bbishop': PIXI.Texture.from('/static/img/gfx/Chess_bdt60.png'),
+        'wbishop': PIXI.Texture.from('/static/img/gfx/Chess_blt60.png'),
+        'bpawn': PIXI.Texture.from('/static/img/gfx/Chess_pdt60.png'),
+        'wpawn': PIXI.Texture.from('/static/img/gfx/Chess_plt60.png'),
+        'bknight': PIXI.Texture.from('/static/img/gfx/Chess_ndt60.png'),
+        'wknight': PIXI.Texture.from('/static/img/gfx/Chess_nlt60.png'),
+        'brook': PIXI.Texture.from('/static/img/gfx/Chess_rdt60.png'),
+        'wrook': PIXI.Texture.from('/static/img/gfx/Chess_rlt60.png'),
+        'bqueen': PIXI.Texture.from('/static/img/gfx/Chess_qdt60.png'),
+        'wqueen': PIXI.Texture.from('/static/img/gfx/Chess_qlt60.png'),
+        'bking': PIXI.Texture.from('/static/img/gfx/Chess_kdt60.png'),
+        'wking': PIXI.Texture.from('/static/img/gfx/Chess_klt60.png')}
+        game_state.newGameSetup();
+        console.log(game_state);
+        renderApp(app, game_state, textures);
+    socket.sen
+        
+</script>
+{%endblock%}
+
+{%block sitecontent%}
+<div id='root'>
+</div>
+{%endblock%}
+

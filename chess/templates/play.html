@@ -1,8 +1,11 @@
 {% extends 'main.html' %}
 
+{%block scripts%}
+{%endblock%}
+
 {%block sitecontent%}
     <h3>Play</h3>
-    <div>Against AI</div>
+    <div><a href="{{url_for('static', filename='/game')}}">Against AI</a></div>
     <div>Against Random Player</div>
     <div>Against Friend</div>
 {%endblock%}

@@ -2,13 +2,15 @@ from datetime import datetime
 from flask.helpers import flash
 from flask.json import jsonify
 from flask_login.utils import login_required
-from chess import app, db
+from chess import app, db, socketio
 from flask import render_template, redirect, url_for, request
 from chess.forms import LoginForm, RegisterForm
 from chess.models import BlogPost, User, Game
 from flask_login import current_user, login_user, logout_user
 from chess.utils import round_datetime
 from sqlalchemy import or_
+from flask_socketio import SocketIO,send,emit
+from PIL import Image
 import json
 import os.path
 
@@ -66,6 +68,19 @@ def user(username):
     time_since = round_datetime(datetime.utcnow() - user.joined)
     return render_template('user.html', user=user, posts=posts, time_since=time_since,games=games)
 
+@app.route('/me/add_friend', methods=['GET', 'POST'])
+@login_required
+def add_friend():
+    print('Add friend')
+    for k,v in request.form.items():
+        print(f'{k}: {v}')
+    sender = User.query.get(request.form.get('sender'))
+    receiver = User.query.get(request.form.get('receiver'))
+    sender.friends.append(receiver)
+    receiver.friends.append(sender)
+    db.session.commit()
+    return ('', 200)
+
 @app.route('/submit_image', methods=['POST', "GET"])
 @login_required
 def submit_image():
@@ -79,13 +94,19 @@ def submit_image():
         return
     
     user = User.query.get(request.form.get('user_id'))
-    print(user.has_avatar)
     user.has_avatar = True
-    print(user.has_avatar)
     db.session.commit()
+    im = Image.open(image)
+    print(im)
     filename = f'{user.id}.png'
-    image.save(os.path.join(os.path.realpath('chess/static/img/avatar/'), filename))
-    return jsonify({'XD':'xd'})
+    im = im.resize((128,128))
+    im.save(os.path.join(os.path.realpath('chess/static/img/avatar/'), filename))
+    filename = f'{user.id}_mini.png'
+    im = im.resize((32,32))
+    im.save(os.path.join(os.path.realpath('chess/static/img/avatar/'), filename))
+    im.close()
+    #image.save(os.path.join(os.path.realpath('chess/static/img/avatar/'), filename))
+    return ('', 204)
 
 @app.route('/play', methods=['GET', 'POST'])
 @login_required
@@ -98,9 +119,16 @@ def play():
 def game(id):
     return render_template('game.html')
 
+@socketio.on('message')
+def message_handler(data):
+    send(data)
+
+@app.route('/play/new', methods=['GET', 'POST'])
+@login_required
 def create_game(host,guest:User=None,type:int=0):
-    if guest is None: pass # look for a player
+    if guest is None: return # look for a player
     g = Game(host,guest)
-    db.session.add(g)
-    db.session.commit(g)
+    if guest != -1:
+        db.session.add(g)
+        db.session.commit(g)
     return redirect(f'/play/{g.id}')

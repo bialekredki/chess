@@ -29,7 +29,13 @@
                     <li><a href="{{url_for('login')}}">Login</a></li>
                     <li><a href="{{url_for('create_account')}}">Register</a></li>
                 {%else%}
-                    <li><a href="{{url_for('user', username=current_user.username)}}">{{current_user.username}}</a></li>
+                    <li>
+                    <a href="{{url_for('user', username=current_user.username)}}">
+                    {%if current_user.has_avatar%}
+                        {%set imgfile = "/img/avatar/{}_mini.png".format(current_user.id)%}
+                        <img src="{{url_for('static', filename=imgfile)}}">
+                    {%endif%}{{current_user.username}}</a>
+                    </li>
                     <li><a href="{{url_for('logout')}}">Sign out</a></li>
                 {%endif%}
             </ul>
