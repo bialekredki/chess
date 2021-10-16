@@ -3,31 +3,53 @@
 {%block head%}
 {{super()}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
-<script src="https://pixijs.download/release/pixi.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/6.1.0-rc.6/browser/pixi.js"></script>
 {%endblock%}
 
 {%block scripts%}
 {{super()}}
 <script src="{{url_for('static', filename='js/game.js')}}"></script>
 <script>
+var socket = io();
+    socket.on('connect', function() {
+        console.log('XD');
+    });
     pieceOnDragBegin = (event) => {
-        this.data = event.data;
-        this.alpha = 0.5;
-        this.dragging = true;
-        console.log(this.data);
-        renderApp(app, game, textures)
-    }
-    pieceOnDragEnd = () => {
-        this.aplha = 1;
-        this.dragging = false;
-        this.data = null;
-    }
-    pieceMove = () => {
-        if(this.dragging) {
-            const newPosition = this.data.getLocalPosition(this.parent);
-            this.x = newPosition.x;
-            this.y = newPosition.y;
+        let target = event.target;
+        console.log(target);
+        if(target.objName == 'piece'){
+            app.lastObj = target;
+            target.alpha = 0.7;
+            socket.emit('getpossiblemoves', {
+                game: game_state,
+                from: target.location,
+            })
         }
+        if(target.objName == 'tile' && app.lastObj.objName == 'piece'){
+            move(app.lastObj, target);
+            app.lastObj.alpha = 1;
+            app.lastObj = target;
+        }
+    }
+
+    rowColToXY = (row,col,size_x,size_y) => {
+        return [(7-row)*size_y,col*size_x];
+    };
+
+    move = (piece,tile) => {
+        let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
+        let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
+        let gs_tile_src = game_state.tiles[piece.location[0]][[piece.location[1]]];
+        let gs_tile_dst = game_state.tiles[tile.location[0]][[tile.location[1]]];
+        console.log(tile.location);
+        [y,x] = rowColToXY(tile.location[0], tile.location[1], size_x, size_y);
+        piece.x = x + size_x/2;
+        piece.y = y + size_y/2;
+        gs_tile_dst = gs_tile_src;
+        gs_tile_src.piece = 0;
+        piece.location = tile.location;
+        console.log(piece.location)
+        console.log(game_state);
     }
     renderApp = (app, game,textures) => {
         let black_tile = 0x1c0a0f;
@@ -37,15 +59,20 @@
         let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
         let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
         let sprites = new Array();
-        const tiles = new PIXI.Graphics();
+        let tiles = new Array();
         
         for(let row = 7; row >= 0; row--){
             for(let col = 0; col < 8; col++){
-                if(row % 2 == col % 2)  tiles.beginFill(white_tile);
+                tiles.push(new PIXI.Graphics())
+                if(row % 2 == col % 2)  tiles.at(-1).beginFill(white_tile);
                 else 
-                    tiles.beginFill(black_tile);
-                tiles.drawRect(start_x,start_y, size_x, size_y);
-                tiles.endFill();
+                    tiles.at(-1).beginFill(black_tile);
+                tiles.at(-1).drawRect(start_x,start_y, size_x, size_y);
+                tiles.at(-1).endFill();
+                tiles.at(-1).interactive = true;
+                tiles.at(-1).objName = 'tile'
+                tiles.at(-1).location = [row,col];
+                tiles.at(-1).on('pointerdown', pieceOnDragBegin)
                 if(game.isEmpty(row,col)) {
                     start_x += size_x;
                     continue;
@@ -59,26 +86,23 @@
                 sprites.at(-1).y = start_y + size_y / 2;
                 sprites.at(-1).interactive = true;
                 sprites.at(-1).buttonMode = true;
-                sprites.at(-1)
-                    .on('pointerdown', pieceOnDragBegin)
-                    .on('pointerup', pieceOnDragEnd)
-                    .on('pointerupoutside', pieceOnDragEnd)
-                    .on('pointermove', pieceMove);
+                sprites.at(-1).objName = 'piece';
+                sprites.at(-1).colour = colour;
+                sprites.at(-1).location = [row,col];
+                sprites.at(-1) .on('pointerdown', pieceOnDragBegin)
                 start_x += size_x;
             }
             start_y += size_y;
             start_x = 0;
         }
-        app.stage.addChild(tiles);
-        sprites.forEach((sprite) => {
-            app.stage.addChild(sprite);
+        tiles.forEach((tile)=> {
+            container.addChild(tile);
         });
-
+        sprites.forEach((sprite) => {
+            container.addChild(sprite);
+        });
+        return [tiles, sprites];
     }
-    var socket = io();
-    socket.on('connect', function() {
-        console.log('XD');
-    });
 
         const app = new PIXI.Application({
             width: 800,
@@ -90,7 +114,7 @@
         console.log(app);
         $('#root').append(app.view);
         const container = new PIXI.Container();
-        app.stage.addChild(container);
+        
         let game_state = new Game();
 
         let textures = {'bbishop': PIXI.Texture.from('/static/img/gfx/Chess_bdt60.png'),
@@ -105,10 +129,15 @@
         'wqueen': PIXI.Texture.from('/static/img/gfx/Chess_qlt60.png'),
         'bking': PIXI.Texture.from('/static/img/gfx/Chess_kdt60.png'),
         'wking': PIXI.Texture.from('/static/img/gfx/Chess_klt60.png')}
+        Object.entries(textures).forEach(([key,value]) => {
+            value.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        })
         game_state.newGameSetup();
         console.log(game_state);
-        renderApp(app, game_state, textures);
-    socket.sen
+        [tiles,sprites] = renderApp(app, game_state, textures);
+        app.stage.addChild(container);
+        console.log(container)
+
         
 </script>
 {%endblock%}

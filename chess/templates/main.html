@@ -8,6 +8,41 @@
 
 {%block scripts%}
      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+     <script>
+        search_user = (e) => {
+            console.log(e)
+            $.post('/search_user', {data: e.value, records:10}).done((data)=>{
+                data = data.data
+                if($('#search-users').length)
+                        $('#search-users').remove();
+                if(data.length < 1 ){
+                    return;
+                }
+                let x = $(e).offset().left;
+                let y = $(e).offset().top;
+                let h = $(e).height();
+                let w = $(e).width();
+                $('body').append("<div id='search-users' </div>")
+                $('#search-users').offset({top:y+h, left:x});
+                $('#search-users').width(w);
+                data.forEach((entry) => {
+                    $('#search-users').append(`<div class='search-user-entry' onclick='gotouser(this)'>${entry.user}</div>`);
+                })
+            })
+        }
+
+        gotouser = (user) => {
+            window.location = `/me/${user.textContent}`;
+        };
+
+        $('#navbar-search').focusout(()=>{
+            console.log('x')
+            if($('#search-users').length && !$('#search-users').is(':focus') && !$('#search-users').is(':hover'))
+                $('#search-users').remove();
+        });
+
+        
+     </script>
 {%endblock%}
 
 {%block title%}
@@ -23,8 +58,10 @@
                 <li><a href="{{url_for('index')}}"><span class="glyphicon glyphicon-home"></span>Home</a></li>
                 <li><a href="{{url_for('play')}}">Play</a></li>
                 <li><a href="{{url_for('blog')}}">Learn</a></li>
+                <li><a href="{{url_for('blog')}}">Messages</a></li>
             </ul>
             <ul class='nav navbar-nav navbar-right'>
+                <li><span class="glyphicon glyphicon-search"><input id='navbar-search' type='text' oninput='search_user(this)' onclick='search_user(this)'></li>
                 {%if current_user.is_anonymous%}
                     <li><a href="{{url_for('login')}}">Login</a></li>
                     <li><a href="{{url_for('create_account')}}">Register</a></li>

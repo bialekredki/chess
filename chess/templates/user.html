@@ -20,59 +20,46 @@
                 contentType: false,
                 data:formData,
                 timeout: 6000
-            })
+            }).done(()=>{location.reload()})
         }
-        $('img').on('click', () => {
+        $('#user_avatar').on('click', () => {
             $('#img-file-input').trigger('click');
             console.log('Img field clicked')
         });
 
-        $('img').addClass('editable')
+        $('#user_avatar').addClass('editable')
     
     {%endif%}
         {%if not current_user.is_anonymous and current_user.username != user.username%}
             submit_friend_request = () => {
-                $.post('/me/add_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"})
+                $.post('/me/add_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"}).done(()=>{location.reload()})
+            }
+            submit_unfriend_request = () => {
+                $.post('/me/remove_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"}).done(()=>{location.reload()})
             }
         {%endif%}
     </script>
 {%endblock%}
 
 {%block sitecontent%}
-    <h3>{{user.username}}</h3>
-    {%if not user.has_avatar%}
-        <img src="{{url_for('static', filename='img/avatar/empty.png')}}">
-    {%else%}
-        {%set imgfile = "/img/avatar/{}.png".format(user.id)%}
-        <img src="{{url_for('static', filename=imgfile)}}">
-    {%endif%}
-    {%if user.username == current_user.username%}
-        <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
-    {%endif%}
+
+    {%include 'user/user_panel.html'%}
+
     <div style='display: inline'>
         <table class='table' id='friends-table'>
-            <thead></thead>
+            <thead><tr>
+                <th></th>
+                <th>Username</th>
+                <th>Ranking</th>
+                <th>Posts</th>
+            </tr></thead>
             <tbody>
-            {%for friend in user.friends%}
-                <tr>
-                    {%if friend.has_avatar%}
-                    <th>
-                        {%set imgfile = "/img/avatar/{}_mini.png".format(friend.id)%}
-                        <img src="{{url_for('static', filename=imgfile)}}">
-                    </th>
-                    {%endif%}
-                    <th>
-                        <a href="{{url_for('user', username=friend.username)}}">{{friend.username}}</a>
-                    </th>
-                </tr>
+            {%for user in user.friends%}
+            {%include 'user/user_table_row.html'%}
             {%endfor%}
             </tbody>
         </table>
     </div>
-    <p>Joined:{{time_since}}</p>
-    {%if not current_user.is_anonymous and current_user.username != user.username%}
-        <input type='button' value='Add friend' onclick='submit_friend_request()'/>
-    {%endif%}
     <div id='games-container'>
         {%for game in games%}
             {%if user.username != game.host.username%}
@@ -84,5 +71,16 @@
                 <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
             </div>
         {%endfor%}
+    </div>
+
+    <div id='posts-container'>
+    <thead></thead>
+    <table class='table' id='friends-table'>
+    <tbody>
+        {%for post in user.posts%}
+            {%include 'blog/blog_table_row.html'%}
+        {%endfor%}
+    </tbody>
+     </table>
     </div>
 {%endblock%}

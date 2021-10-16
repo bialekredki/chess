@@ -1,0 +1,18 @@
+                    {%set imgfile = "/img/avatar/{}_mini.png".format(post.user_id)%}
+                        <tr>
+                            <th>
+                            {%set id=post.id%}
+                                <a href="{{url_for('see_post', postid=id)}}">{{post.subject}}</a>
+                            </th>
+                            <th>
+                                {{post.upvotes}}
+                            </th>
+                            <th>
+                                {{post.get_human_creation_delta()}}
+                            </th>
+                            <th>
+                            <a href="{{url_for('index')}}">
+                                <img src="{{url_for('static', filename=imgfile)}}">
+                                {{post.get_author_username()}}</a></th>
+                            </a>
+                        </tr>

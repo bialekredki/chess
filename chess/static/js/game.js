@@ -2,6 +2,7 @@ class Tile {
     constructor(piece, colour) {
         this.piece = piece;
         this.colour = colour;
+        this.moved = false;
     }
 
     isWhite() {

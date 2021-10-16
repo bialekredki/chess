@@ -1,0 +1,9 @@
+    <div class="panel panel-info" style="width: 80;">
+        <div class="panel-heading">
+       <p class="panel-title"><a href="{{url_for('user', username=comment.get_author_username())}}">{{comment.get_author_username()}}</a></p>
+        <p class="card-text">{{comment.get_human_creation_delta()}}</p>
+        </div>
+        <div class="panel-body">
+            {{comment.content}}
+        </div>
+    </div>

@@ -1,0 +1,69 @@
+{% extends 'main.html' %}
+
+{%block scripts%}
+{{super()}}
+    <script>
+        like = () => {
+            $.post('/blog/{{post.id}}/upvote').done(()=>{location.reload()})
+        };
+        dislike = () => {
+            $.post('/blog/{{post.id}}/downvote').done(()=>{location.reload()})
+        };
+
+        comment = ()=> {
+            $('#comment-wrapper').css('display','block');
+            $('#btn-comment').attr('onclick', 'send_comment()');
+            $('#btn-comment-text').text('Send')
+            $('#comment-icon').removeClass('glyphicon-pencil')
+            $('#comment-icon').addClass('glyphicon-send')
+            $('#btn-cancel').css('display', 'inline-block')
+        };
+
+        cancel = ()=>{
+            $('#comment-wrapper').css('display','none');
+            $('#btn-comment').attr('onclick', 'comment()');
+            $('#btn-comment-text').text('Comment')
+            $('#comment-icon').removeClass('glyphicon-send')
+            $('#comment-icon').addClass('glyphicon-pencil')
+            $('#btn-cancel').css('display', 'none')
+        };
+
+        send_comment = ()=>{
+            $.post('/blog/{{post.id}}/comment', {content: $('#comment').val()}).done(()=>{location.reload()})
+        };
+
+
+    </script>
+{%endblock%}
+
+{%block sitecontent%}
+    <div class="panel panel-primary" style="width: 80;">
+        <div class="panel-heading">
+        <h1 class="panel-title">{{post.subject}}</h5>
+        <p class="card-text">Posted:{{post.get_human_creation_delta()}}</p>
+        <p class="card-text">Author:<a href="{{url_for('user', username=post.get_author_username())}}">{{post.get_author_username()}}</a></p>
+        <p class="card-text">Upvotes:{{post.upvotes}}</p>
+        </div>
+        <div class="panel-body">
+            {{post.content}}
+        </div>
+        <div class="panel-footer" id='article-footer'>
+        {%if not current_user.is_liking(post)%}
+            <p id='btn-like' class='btn btn-primary' onclick='like()'><span id='like-icon' class="glyphicon glyphicon-thumbs-up"></span>Like</p>
+        {%else%}
+            <p id='btn-like' class='btn btn-danger' onclick='dislike()'><span id='like-icon' class="glyphicon glyphicon-thumbs-down"></span>Dislike</p>
+        {%endif%}
+            
+            <p id='btn-comment' class='btn btn-info' onclick='comment()'><span id='comment-icon' class="glyphicon glyphicon-pencil"></span><span id='btn-comment-text'>Comment</span></button>
+            <p id='btn-cancel' class='btn btn-danger' onclick='cancel()' style='display:none;'><span id='like-icon' class="glyphicon glyphicon-remove"></span>Cancel</p>
+            <div id='comment-wrapper' style='margin:5px;display:none;'>
+                <span class='label label-default' style='display: block;'>Your comment:</span>
+                <textarea id='comment' style='width:100%;'></textarea>
+            </div>
+        </div>
+    </div>
+
+    {%for comment in post.comments%}
+        {%include 'blog/blog_comment.html'%}
+    {%endfor%}
+{%endblock%}

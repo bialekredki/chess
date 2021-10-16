@@ -1,13 +1,73 @@
 {% extends 'main.html' %}
 
+{%block scripts%}
+    {{super()}}
+    <script>
+    post_creation = () => {
+        $('#posts').css('display', 'none');
+        $('#post_creation').css('display', 'block');
+        $('#btn-post-creation').css('display', 'none');
+    }
+
+    cancel_post_creation = () => {
+        $('#posts').css('display', 'block');
+        $('#post_creation').css('display', 'none');
+        $('#btn-post-creation').css('display', 'block');
+    }
+
+    send_post = () => {
+        $.post('/blog/post', {subject: $('#post-subject').val(), content: $('#post-content').val()}).done(()=>{location.reload()})
+    };
+
+    $('#post_creation').css('display', 'none');
+    </script>
+{%endblock%}
+
 {%block sitecontent%}
-    {%for post in posts%}
-
-        <div>
-            <p> {{post.author.username}} says:<br>
-            {{post.timestamp}} </p>
-            <b>{{post.content}}</b>
+    <div class='jumbotron'>
+        <h1>Hello!</h1>
+    </div>
+    <input id='btn-post-creation' type='button' onclick='post_creation()' value='Create post' class='btn btn-primary'>
+        <div id='post_creation'>
+            <textarea id='post-subject' rows='1' cols='30'>Subject</textarea>
+            <textarea id='post-content' rows='7' cols='90'>
+            </textarea>
+            <br>
+            <input type='submit' class='btn btn-submit' onclick='send_post()'/>
+            <input type='button' onclick='cancel_post_creation()' value='Cancel' class='btn btn-danger'>
         </div>
-
-    {%endfor%}
+        <div id='posts'>
+            <span class='post-list' id='top-posts'>
+                    <table class='table inline-table'>
+                    <thead><tr><th>Top posts</th></tr></thead>
+                    <tbody>
+                    {%for post in top_posts%}
+                        {%include 'blog/blog_table_row.html'%}
+                    {%endfor%}
+                    </tbody>
+                </table>
+            </span >
+            <span class='post-list' id='friends-posts'>
+                <table class='table inline-table'>
+                    <thead><tr><th>Your friends' posts</th></tr></thead>
+                    <tbody>
+                    {%for post in friends_posts%}
+                    {%set imgfile = "/img/avatar/{}_mini.png".format(post.user_id)%}
+                        {%include '/blog/blog_table_row.html'%}
+                    {%endfor%}
+                    </tbody>
+                </table>
+            </span>
+            <span class='post-list' id='latests-posts'>
+                <table class='table inline-table'>
+                    <thead><tr><th>Your friends' posts</th></tr></thead>
+                    <tbody>
+                    {%for post in latest_posts%}
+                    {%set imgfile = "/img/avatar/{}_mini.png".format(post.user_id)%}
+                        {%include '/blog/blog_table_row.html'%}
+                    {%endfor%}
+                    </tbody>
+                </table>
+            </span>
+        </div>
 {%endblock%}

@@ -1,0 +1,28 @@
+    <div class="panel panel-primary" style="width: 18rem;">
+    {%if not user.has_avatar%}
+        <img id='user_avatar' src="{{url_for('static', filename='img/avatar/empty.png')}}">
+    {%else%}
+        {%set imgfile = "/img/avatar/{}.png".format(user.id)%}
+        <img id='user_avatar' src="{{url_for('static', filename=imgfile)}}">
+    {%endif%}
+    {%if user.username == current_user.username%}
+        <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
+    {%endif%}
+    <div class="panel-heading"><h5 class="panel-title">{{user.username}}</h5></div>
+    <div class="panel-body">
+        <p class="card-text">Joined:{{user.get_human_creation_delta()}}</p>
+        <p class="card-text">Ranking:{{user.elo}}</p>
+        <p class="card-text">Posts:{{user.get_posts_count()}}</p>
+    </div>
+    <div class='panel-title'>
+        {%if user.username != current_user.username%}
+        <p href="#" class="btn btn-primary" style='width:100%'>Invite to play</a>
+        {%endif%}
+            {%if not current_user.is_anonymous and current_user.username != user.username and not user.is_friends_with(current_user)%}
+        <p type='button' onclick='submit_friend_request()' class='btn btn-primary' style='width:100%'>Add friend</a>
+    {%endif%}
+    {%if not current_user.is_anonymous and current_user.username != user.username and user.is_friends_with(current_user)%}
+        <p type='button' onclick='submit_unfriend_request()' class='btn btn-danger' style='width:100%'>Remove friend</a>
+    {%endif%}
+    </div>
+    </div>

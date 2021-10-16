@@ -26,3 +26,11 @@ class RegisterForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Please use another email')
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Submit')
+    def validate_email(self,email):
+        user = User.query.filter_by(email=email.data).first()
+        if user is None:
+            raise ValidationError('There\' no account associated with this email')

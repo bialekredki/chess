@@ -1,0 +1,17 @@
+<tr>
+    <td>
+        {%if user.has_avatar%}
+            {%set imgfile = "/img/avatar/{}_mini.png".format(user.id)%}
+            <img src="{{url_for('static', filename=imgfile)}}">
+        {%endif%}
+    </td>
+    <td>
+        <a href="{{url_for('user', username=user.username)}}">{{user.username}}</a>
+    </td>
+    <td>
+        {{user.elo}}
+    </td>
+    <td>
+        {{user.get_posts_count()}}
+    </td>
+</tr>

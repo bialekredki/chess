@@ -1,10 +1,82 @@
 .editable {
     border: solid 2px transparent;
+    transition: all 1s linear;
+    cursor: pointer;
 }
 
 .editable:hover {
     opacity: 0.6;
     border: solid black 2px;
+}
+
+#user_avatar {
+    border-radius: 50%;
+    transition: all 1s linear;
+}
+
+#navbar-search {
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px dashed white;
+    transition: all 1s linear;
+    margin-top: 5%;
+}
+
+#navbar-search:focus {
+    background-color: #7c7c7cbd;
+    border: 1px dashed white;
+    color: white;
+}
+
+#navbar-search:hover {
+    background-color: #e6e6e67e;
+    border: 1px dashed white;
+    color: rgb(58, 58, 58);
+}
+
+#user_avatar:hover {
+    border-radius: 35%;
+}
+
+#search-users {
+    border: solid rgb(55, 55, 143, 0.6) 2px;
+    background-color: aliceblue;
+}
+
+.search-user-entry:hover {
+    background-color: rgb(173, 199, 221);
+    color: rgb(39, 38, 38);
+}
+
+.inline-table {
+    display: inline-table;
+    margin-right: 10px;
+    border: 1px rgba(0, 0, 0, 0.651) solid;
+    border-right: 3px rgba(0, 0, 0, 0.651) solid;
+    border-bottom: 3px rgba(0, 0, 0, 0.651) solid;
+    box-shadow: 10px 10px 10px black;
+    transition: all 1s linear;
+    width: auto;
+}
+
+.inline-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.342);
+    color: white;
+    transition: all 1s;
+}
+
+.post-list {
+    display: inline;
+}
+
+.panel {
+    border-right-width: 3px;
+    border-bottom-width: 3px;
+    box-shadow: 10px 10px 10px black;
+}
+
+.panel-primary a {
+    color: rgb(138, 216, 210);
 }
 
 #root {
