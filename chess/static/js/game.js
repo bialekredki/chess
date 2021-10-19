@@ -68,6 +68,10 @@ class Game {
         }
     }
 
+    at(row, col) {
+        return this.tiles[row][col]
+    }
+
     setRowColour(row, colour) {
         rowObj = this.tiles[row];
         for (let col = 0; col < 8; col++) {

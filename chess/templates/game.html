@@ -12,23 +12,88 @@
 <script>
 var socket = io();
     socket.on('connect', function() {
-        console.log('XD');
+        console.log('Socket connected');
+        socket.emit('getgame', {id:"{{game.id}}"});
+        {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
+            socket.emit('getcolour' ,{id:"{{game.id}}", player_id:"{{current_user.id}}"})
+        {%endif%}
     });
+
+    {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
+            socket.on('setcolour', (json) => {
+                colour = json['colour'];
+                console.log(json);
+        });
+    {%endif%}
+    socket.on('setpossiblemoves', (json) => {
+        json['moves'].forEach((move)=>{
+            let tile = tiles[(7-move[0])*8+move[1]]
+            tile.alpha = 0.5;
+        });
+    });
+    socket.on('move', (json) =>{
+        let to = json['to'];
+        let from = json['from'];
+        let tile = tiles[(7-to[0])*8+to[1]];
+        let piece;
+        for(let i = 0; i<sprites.length; i++){
+            if(sprites[i].location[0] == from[0] && sprites[i].location[1] == from[1]){
+                piece = sprites[i];
+                break;
+            }
+        }
+        move(piece, tile)
+        piece.alpha = 1;
+        app.lastObj = tile;
+    });
+    socket.on('setgame', (json)=>{
+        json['tiles'].forEach((row,r)=>{
+            row.forEach((col,c) => {
+                game_state.at(r,c).piece = col['piece'];
+                game_state.at(r,c).colour = col['colour'];
+                game_state.at(r,c).moved = col['moved'];
+            });
+        });
+        [tiles,sprites] = renderApp(app,game_state,textures)
+    });
+
+
+    
     pieceOnDragBegin = (event) => {
         let target = event.target;
         console.log(target);
         if(target.objName == 'piece'){
+            if(app.lastObj && app.lastObj.objName == 'piece'){
+                app.lastObj.alpha = 1;
+                tiles.forEach((tile)=>{
+                    tile.alpha = 1;
+                });
+                console.log(colour)
+                if(game_state.at(app.lastObj.location[0], app.lastObj.location[1]).colour == colour && game_state.at(target.location[0], target.location[1]).colour != colour){
+                    socket.emit('confirmmove', {
+                        game: game_state,
+                        to: target.location,
+                        from: app.lastObj.location,
+                        gameid: "{{game.id}}"
+                    })
+                    return;
+                }
+            }
             app.lastObj = target;
             target.alpha = 0.7;
             socket.emit('getpossiblemoves', {
                 game: game_state,
                 from: target.location,
+                gameid: "{{game.id}}"
             })
         }
         if(target.objName == 'tile' && app.lastObj.objName == 'piece'){
-            move(app.lastObj, target);
-            app.lastObj.alpha = 1;
-            app.lastObj = target;
+            socket.emit('confirmmove', {
+                game: game_state,
+                to: target.location,
+                from: app.lastObj.location,
+                gameid: "{{game.id}}"
+            })
         }
     }
 
@@ -41,19 +106,17 @@ var socket = io();
         let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
         let gs_tile_src = game_state.tiles[piece.location[0]][[piece.location[1]]];
         let gs_tile_dst = game_state.tiles[tile.location[0]][[tile.location[1]]];
-        console.log(tile.location);
         [y,x] = rowColToXY(tile.location[0], tile.location[1], size_x, size_y);
         piece.x = x + size_x/2;
         piece.y = y + size_y/2;
-        gs_tile_dst = gs_tile_src;
+        gs_tile_dst.piece = gs_tile_src.piece;
+        gs_tile_dst.colour = gs_tile_src.colour;
+        gs_tile_dst.moved = true;
         gs_tile_src.piece = 0;
+        gs_tile_src.colour = false;
         piece.location = tile.location;
-        console.log(piece.location)
-        console.log(game_state);
     }
     renderApp = (app, game,textures) => {
-        let black_tile = 0x1c0a0f;
-        let white_tile = 0xdb9eaf;
         let start_x = 0;
         let start_y = 0;
         let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
@@ -111,11 +174,17 @@ var socket = io();
             resolution: window.devicePixelRation || 1,
             antialias: true
         });
-        console.log(app);
         $('#root').append(app.view);
         const container = new PIXI.Container();
-        
+        let tiles = Array()
+        let sprites = Array()
         let game_state = new Game();
+        let black_tile = 0x1c0a0f;
+        let black_tile_hinted = 0x832f47;
+        let white_tile = 0xdb9eaf;
+        let white_tile_hinted = 0xf1dae2;
+        let colour = null;
+        
 
         let textures = {'bbishop': PIXI.Texture.from('/static/img/gfx/Chess_bdt60.png'),
         'wbishop': PIXI.Texture.from('/static/img/gfx/Chess_blt60.png'),
@@ -132,18 +201,38 @@ var socket = io();
         Object.entries(textures).forEach(([key,value]) => {
             value.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
         })
-        game_state.newGameSetup();
-        console.log(game_state);
-        [tiles,sprites] = renderApp(app, game_state, textures);
         app.stage.addChild(container);
-        console.log(container)
 
         
 </script>
 {%endblock%}
 
 {%block sitecontent%}
+<div id='black-user-banner'>
+    <table class='table'>
+    <thead></thead>
+    <tbody>    
+    {%if game.is_host_white%}
+        {%set user=game.guest%}
+    {%else%}
+        {%set user=game.host%}
+    {%endif%}
+    {%if user != None%}
+    {%include 'user/user_table_row.html'%}</tbody></table
+    {%endif%}
+</div>
 <div id='root'>
 </div>
+    <table class='table'>
+    <thead></thead>
+    <tbody>    
+    {%if game.is_host_white%}
+        {%set user=game.host%}
+    {%else%}
+        {%set user=game.guest%}
+    {%endif%}
+    {%if user != None%}
+    {%include 'user/user_table_row.html'%}</tbody></table
+    {%endif%}
 {%endblock%}
 

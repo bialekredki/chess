@@ -5,8 +5,9 @@ from flask.json import jsonify
 from flask_login.utils import login_required
 from chess import app, db, socketio, mail
 from flask import render_template, redirect, url_for, request
+from chess.AI import StupidAI, get_ai
 from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm
-from chess.game import game_get_possible_moves
+from chess.game import MovesOrdering
 from chess.models import BlogPost, BlogPostComment, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
@@ -259,7 +260,7 @@ def play():
 @app.route('/play/<id>')
 @login_required
 def game(id):
-    return render_template('game.html')
+    return render_template('game.html', game=Game.query.filter_by(id=id).first_or_404())
 
 @socketio.on('message')
 def message_handler(data):
@@ -267,16 +268,80 @@ def message_handler(data):
 
 @app.route('/play/new', methods=['GET', 'POST'])
 @login_required
-def create_game(host,guest:User=None,type:int=0):
-    if guest is None: return # look for a player
-    g = Game(host,guest)
-    if guest != -1:
-        db.session.add(g)
-        db.session.commit(g)
-    return redirect(f'/play/{g.id}')
+def create_game(guest_id:int=None,type:int=0):
+    if guest_id is None and request.args.get('guest_id'):
+        guest_id = int(request.args.get('guest_id'))
+    if guest_id is None: return # look for a player
+    print('New game')
+    try:
+        if guest_id == -1: 
+            g = Game(current_user.id, guest_id, AI='Stupid')
+            print(g.AI)
+        else: 
+            g = Game(current_user.id, guest_id)
+            print('no ai')
+    except:
+        app.logger.error("%s submitted a move without permission[guest]", current_user.username,exc_info=True)
+        return redirect(url_for('index'))
+    db.session.add(g)
+    db.session.commit()
+    return redirect(url_for(f'game', id=g.id))
+
+@socketio.on('getgame')
+def set_game(js,methods='GET'):
+    game:Game = Game.query.filter_by(id=js['id']).first()
+    tiles = list()
+    for r,row in enumerate(game.rows):
+        tiles.append([tile.jsonify() for tile in row.tiles])
+    print(tiles)
+    socketio.emit('setgame',{'tiles':tiles})
+
+@socketio.on('getcolour')
+def set_colour(js,methods='GET'):
+    game:Game = Game.query.filter_by(id=js['id']).first()
+    user:User = User.query.filter_by(id=js['player_id']).first()
+    if not user.is_in_game(game): return
+    socketio.emit('setcolour',{'colour':user.plays_as_white(game)})
 
 @socketio.on('getpossiblemoves')
-def get_possible_moves(json, methods=['GET']):
-    print(str(json))
-    print(current_user)
-    game_get_possible_moves(json['game']['tiles'], json['from'])
+def get_possible_moves(js, methods=['GET']):
+    id = js['gameid']
+    game:Game = Game.query.filter_by(id=id).first()
+    if not game.compare_with_js(js['game']['tiles']):
+        app.logger.info("Comparison failed")
+        return  
+    if current_user.id != game.host_id and current_user.id != game.guest_id:
+        return #TODO: Handle discrepancies on server-client
+    socketio.emit('setpossiblemoves', {'moves': game.get_moves(js['from']), 'to':current_user.id})
+
+@socketio.on('confirmmove')
+def confirm_move(js, methods='GET'):
+    app.logger.info("Move request")
+    id = js['gameid']
+    game:Game = Game.query.filter_by(id=id).first()
+    if not game.compare_with_js(js['game']['tiles']):
+        app.logger.info("Comparison failed")
+        return
+    if not current_user.is_in_game(game):
+        app.logger.info("%s submitted a move without permission[guest]", current_user.username)
+        return
+    if current_user.plays_as_white(game) and not game.at(js['from']).colour:
+        app.logger.info("%s submitted a move without permission[black]", current_user.username)
+        return
+    if current_user.plays_as_black(game) and game.at(js['from']).colour:
+        app.logger.info("%s submitted a move without permission[white]", current_user.username)
+        return
+    possible_moves = game.get_all_moves(order_by=MovesOrdering.BY_SOURCE)
+    if tuple(js['from']) not in possible_moves.keys() or js['to'] not in possible_moves[tuple(js['from'])]:
+        app.logger.info('%s submitted impossible move', current_user.username)
+        return
+    game.move(js['from'], js['to'])
+    socketio.emit('move', {'from': js['from'], 'to': js['to']}, broadcast=True)
+    print(game.AI)
+    if game.AI is not None:
+        possible_moves = game.get_all_moves(colour=not game.at(js['to']).colour)
+        move = get_ai(game.AI).make_stupid_move(possible_moves)
+        game.move(move[0], move[1])
+        socketio.emit('move', {'from': move[0], 'to': move[1]}, broadcast=True)
+    
+    

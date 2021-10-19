@@ -6,6 +6,23 @@ from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
 from flask_mail import Mail
+from logging.config import dictConfig
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,7 +40,7 @@ app.config['MAIL_USERNAME'] = os.environ['APP_MAIL_USERNAME']
 app.config['MAIL_PASSWORD'] = os.environ['APP_MAIL_PASSWORD']
 app.config['MAIL_DEFAULT_SENDER'] = 'oskarkorgul@gmail.com'
 db = SQLAlchemy(app)
-migrate = Migrate(app,db)
+migrate = Migrate(app,db, render_as_batch=True)
 login = LoginManager(app)
 login.login_view = 'login'
 bootstrap = Bootstrap(app)

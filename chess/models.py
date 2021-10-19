@@ -9,6 +9,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from chess import login
 from chess.utils import round_datetime
+from chess.game import Game as ChessGame, PieceType
+from typing import Union
 
 @login.user_loader
 def load_user(id):
@@ -109,6 +111,25 @@ class User(UserMixin, ITimeStampedModel):
     def get_posts_count(self):
         return len(self.posts.all())
 
+    def is_in_game(self,game):
+        return True if game in self.hostgames or game in self.guestgames else False
+
+    def _is_gamehost(self,game):
+        return True if game in self.hostgames else False
+
+    def _is_gameguest(self,game):
+        return True if game in self.guestgames else False
+
+    def plays_as_white(self,game):
+        if not self.is_in_game(game): return False
+        if game.is_host_white and self._is_gamehost(game) or not game.is_host_white and self._is_gameguest(game): return True
+        return False
+
+    def plays_as_black(self,game):
+        if not self.is_in_game(game): return False
+        if not game.is_host_white and self._is_gamehost(game) or game.is_host_white and self._is_gameguest(game): return True
+        return False
+
 class BlogPost(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(32))
@@ -163,27 +184,102 @@ class Message(ITimeStampedModel):
     timestamp = db.Column(db.DateTime(128), index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-class Game(ITimeStampedModel):
+class Game(ITimeStampedModel, ChessGame):
     id = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(db.DateTime(128), index=True, default=datetime.utcnow)
     host_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     guest_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     state = db.Column(db.Integer, index=True, default = 0)
+    AI = db.Column(db.String(32))
     host = db.relationship('User', backref='hostgames', lazy='joined', foreign_keys='Game.host_id')
     guest = db.relationship('User', backref='guestgames', lazy='joined', foreign_keys='Game.guest_id')
+    is_host_white = db.Column(db.Boolean, default=True)
+    check = db.Column(db.Boolean, default=False)
 
-    def __init__(self, host, guest):
-        self.host = host
-        self.guest = guest
+    def __init__(self,host_id,guest_id,is_host_white:bool=True, default_setup:bool=True, AI=None):
+        #ChessGame.__init__(self, is_host_white, False, AI)
+        self.host_id = host_id
+        self.guest_id = guest_id
+        self.AI = AI
+        self.is_host_white = is_host_white
+        for row in range(8):
+            self.rows.append(GameRow(row=row))
+            for col in range(8):
+                self.rows[row].tiles.append(GameTile(column=col))
+                if not default_setup: continue
+                if 6<=row: self.set_colour((row,col), False)
+                elif row < 2: self.set_colour((row,col), True)
+                if row == 7 or row == 0:
+                    self.set_piece((row,col), self.backRowSetup[col])
+                if row == 6 or row == 1:
+                    self.set_piece((row,col), 1)
 
     def __repr__(self):
         return f'<Game at={self.timestamp} state={self.state} between {self.host}{self.guest}>'
+
+    def at(self,pos:Union[list,tuple]):
+        return self.rows[pos[0]].get_tile(pos[1])
+    def set_colour(self, pos:Union[list,tuple], colour:bool):
+        self.rows[pos[0]].tiles[pos[1]].colour = colour
+    def set_piece(self, pos:Union[list,tuple], piece:int):
+        self.rows[pos[0]].tiles[pos[1]].piece = piece
+    def move(self,src:list,dest:list):
+        ChessGame.move(self, src, dest)
+        db.session.commit()
+
+    def find_king(self, colour:bool)->dict:
+        print('KING IN THE NORTH')
+        for r,row in enumerate(self.rows):
+            for t,tile in enumerate(row.tiles):
+                print(f'{tile.piece} == {PieceType.KING.value}')
+                if tile.piece == PieceType.KING.value and tile.colour == colour:
+                    return {'xy': (r,t), 'tile': tile} 
+
 
 class RecoveryTry(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     ipaddr = db.Column(db.String(64))
     is_confirmed = db.Column(db.Boolean, default=False)
+
+class GameRow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    row = db.Column(db.Integer)
+    game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
+    game = db.relationship('Game', backref='rows', lazy='joined', foreign_keys='GameRow.game_id')
+
+    def get_tile(self, col:int):
+        return self.tiles[col]
+
+class GameTile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    row_id = db.Column(db.Integer, db.ForeignKey('game_row.id'))
+    row = db.relationship('GameRow', backref='tiles', lazy='joined', foreign_keys='GameTile.row_id')
+    piece = db.Column(db.Integer, default=0)
+    colour = db.Column(db.Boolean, default=False)
+    moved = db.Column(db.Boolean, default=False)
+    column = db.Column(db.Integer)
+
+    def __repr__(self) -> str:
+        return  f'<GameTile {self.id} {self.xy()}{[self.piece,self.colour,self.moved]}>'
+
+    def xy(self) -> tuple:
+        return ({self.row.row, self.column})
+
+    def is_empty(self)->bool:
+        return True if self.piece == 0 else False
+
+    def is_white(self)->bool:
+        return True if self.colour else False
+
+    def is_black(self)->bool:
+        return True if not self.colour else False
+
+    def is_moved(self)->bool:
+        return True if self.moved else False
+
+    def jsonify(self)->dict:
+        return {'piece':self.piece, 'colour': self.colour, 'moved': self.moved}
 
 
 
