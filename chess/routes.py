@@ -5,9 +5,10 @@ from flask.json import jsonify
 from flask_login.utils import login_required
 from chess import app, db, socketio, mail
 from flask import render_template, redirect, url_for, request
-from chess.AI import StupidAI, get_ai
+from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StupidAI, get_ai
 from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm
 from chess.game import MovesOrdering
+from chess.game_options import GameFormat, GameOption
 from chess.models import BlogPost, BlogPostComment, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
@@ -77,7 +78,7 @@ def blog():
         for post in BlogPost.query.filter_by(user_id=friend.id).all():
             friends_posts.append(post)
     posts='test'
-    return render_template('blog.html', posts=posts,friends_posts=friends_posts, top_posts=top_posts, latest_posts=latest_posts)
+    return render_template('blog.html', posts=posts,friends_posts=friends_posts, top_posts=top_posts, latest_posts=latest_posts, title='Blog')
 
 @app.route('/blog/post', methods=['POST'])
 @login_required
@@ -93,12 +94,12 @@ def post_blog():
 @login_required
 def see_post(postid):
     print(current_user.is_liking(BlogPost.query.filter_by(id=postid).first()))
-    post = BlogPost.query.filter_by(id=postid).first_or_404()
+    post:BlogPost = BlogPost.query.filter_by(id=postid).first_or_404()
     post.comments.sort(key=lambda x: x.timestamp_creation,reverse=True)
     for c in post.comments:
         print(c.timestamp_creation)
     print(post.comments)
-    return render_template('post.html', post=post)
+    return render_template('post.html', post=post, title=f'Blog - {post.subject}')
 
 @app.route('/blog/<postid>/upvote', methods=['POST'])
 @login_required
@@ -109,7 +110,7 @@ def like_post(postid):
     if post.like(current_user):
         post.upvotes += 1
     db.session.commit()
-    return render_template('post.html', post=post)
+    return render_template('post.html', post=post, title=f'Blog - {post.subject}')
 
 @app.route('/blog/<postid>/downvote', methods=['POST'])
 @login_required
@@ -120,7 +121,7 @@ def dislike_post(postid):
     if post.dislike(current_user):
         post.upvotes -= 1
     db.session.commit()
-    return render_template('post.html', post=post)
+    return render_template('post.html', post=post, title=f'Blog - {post.subject}')
 
 @app.route('/blog/<postid>/comment', methods=['POST'])
 @login_required
@@ -132,7 +133,7 @@ def comment_post(postid):
         return redirect(url_for('something_went_wrong'))
     db.session.add(comment)
     db.session.commit()
-    return render_template('post.html', post=post)
+    return render_template('post.html', post=post, title=f'Blog - {post.subject}')
 
 @app.route('/register', methods=['GET', "POST"])
 def create_account():
@@ -161,7 +162,7 @@ def forgot_password():
         recovery_try = RecoveryTry(user_id=User.query.filter_by(email=form.email.data).first().id, ipaddr=request.remote_addr)
         token = generate_recovery_token(email=form.email.data, ipaddr=request.remote_addr, id=recovery_try.id)
         send_mail('Notchess - Recover your password', form.email.data, url_for('reset_password', token=token, _external=True), 'mail/email_reset_password.html')
-    return render_template('forgot_password.html',form=form)
+    return render_template('forgot_password.html',form=form, title='Password recovery')
 
 @app.route('/reset/<token>', methods=['GET','POST'])
 def reset_password(token):
@@ -178,7 +179,7 @@ def reset_password(token):
         db.session.commit()
         login_user(User.query.filter_by(email=email).first_or_404())
         return redirect(url_for('restore_password'))
-    return redirect(url_for('index'))
+    return redirect(url_for('index'), title='Reset password')
 
 @app.route('/confirm/<token>')
 def confirm_email(token):
@@ -204,9 +205,14 @@ def confirm_email(token):
 def user(username:User):
     user = User.query.filter_by(username=username).first_or_404()
     posts = BlogPost.query.filter_by(author=user)
-    games = Game.query.filter(or_(Game.host==user, Game.guest==user))
+    games = Game.query.filter(or_(Game.host==user, Game.guest==user)).order_by(Game.timestamp.desc()).limit(10).all()
     time_since = round_datetime(datetime.utcnow() - user.get_creation_date())
     return render_template('user.html', user=user, posts=posts, time_since=time_since,games=games)
+
+@app.route('/me/<username>/games', methods=['GET'])
+@login_required
+def user_games(username:User):
+    pass
 
 @app.route('/me/add_friend', methods=['GET', 'POST'])
 @login_required
@@ -255,6 +261,16 @@ def submit_image():
 @login_required
 def play():
     return render_template('play.html')
+
+@app.route('/api/play/ai_options', methods=['GET'])
+@login_required
+def play_api_get_ai():
+    return jsonify({'ai_names':AI_INTEGRATIONS_NAMES_LIST, 'options':GameOption.ai_options()})
+
+@app.route('/api/play/human_options', methods=['GET'])
+@login_required
+def play_api_get_human():
+    return jsonify({'options':GameOption.human_options(), 'time_formats':GameFormat.all()})
 
 
 @app.route('/play/<id>')
@@ -316,9 +332,10 @@ def get_possible_moves(js, methods=['GET']):
 
 @socketio.on('confirmmove')
 def confirm_move(js, methods='GET'):
-    app.logger.info("Move request")
+    app.logger.info("Move request\n%s", str(js))
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
+    print('FUCKING TURN', game.turn)
     if not game.compare_with_js(js['game']['tiles']):
         app.logger.info("Comparison failed")
         return
@@ -331,17 +348,28 @@ def confirm_move(js, methods='GET'):
     if current_user.plays_as_black(game) and game.at(js['from']).colour:
         app.logger.info("%s submitted a move without permission[white]", current_user.username)
         return
+    if current_user.plays_as_black(game) and game.turn:
+        app.logger.info("%s submitted a move outside his turn[white]", current_user.username)
+        return
+    if current_user.plays_as_white(game) and not game.turn:
+        app.logger.info("%s submitted a move outside his turn[black]", current_user.username)
+        return
     possible_moves = game.get_all_moves(order_by=MovesOrdering.BY_SOURCE)
     if tuple(js['from']) not in possible_moves.keys() or js['to'] not in possible_moves[tuple(js['from'])]:
         app.logger.info('%s submitted impossible move', current_user.username)
         return
     game.move(js['from'], js['to'])
+    game.turn = not game.turn
+    game.set_check(game.turn)
+    print('Turn on players mOVE', game.turn)
     socketio.emit('move', {'from': js['from'], 'to': js['to']}, broadcast=True)
-    print(game.AI)
-    if game.AI is not None:
+    if game.AI is not None and current_user.plays_as_white(game) != game.turn:
         possible_moves = game.get_all_moves(colour=not game.at(js['to']).colour)
         move = get_ai(game.AI).make_stupid_move(possible_moves)
         game.move(move[0], move[1])
+        game.turn = not game.turn
+        print('Turn on AI mOVE', game.turn)
         socketio.emit('move', {'from': move[0], 'to': move[1]}, broadcast=True)
+    db.session.commit()
     
     

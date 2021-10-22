@@ -2,13 +2,118 @@
 
 {%block scripts%}
 {{super()}}
+
+<script>
+    $('#ai-item-1>span').click(function(e) {
+        if ($(this).parent().children().length > 2 )
+            return;
+        $.get("{{url_for('play_api_get_ai')}}").done((data)=>{
+            console.log(data);
+            console.log(this);
+            e.stopPropagation();
+            $('#ai-item-1').removeClass('btn');
+            $('#ai-item-1').removeClass('btn-info');
+            $('#ai-item-1').append('<div></div>')
+            $('#ai-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
+            $('#ai-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
+            $('#ai-item-1>div').append(`<ul class='list-group' id='ai-item-2' style='width:50%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Choose your fighter</li>
+            </ul>`)
+            $('#ai-item-1>div').append(`<ul class='list-group' id='ai-item-3' style='width:50%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Options</li>
+            </ul>`)
+            data['ai_names'].forEach((e)=>{
+                $('#ai-item-1>div>#ai-item-2').append(`<li id='${e}' class='list-group-item btn'>${e}</li>`);
+                $(`#${e}`).click(function(e) {
+                    $(this).parent().children('.active').removeClass('active');
+                    $(this).addClass('active');
+                });
+            });
+            data['options'].forEach((e)=>{
+                console.log(e);
+                $('#ai-item-1>div>#ai-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
+            });
+        });
+    });
+
+    $('#friend-item-1>span').click(function(e) {
+        if ($(this).parent().children().length > 2 )
+            return;
+        $.get("{{url_for('play_api_get_human')}}").done((data)=>{
+            console.log(data);
+            e.stopPropagation();
+            $('#friend-item-1').removeClass('btn');
+            $('#friend-item-1').removeClass('btn-info');
+            $('#friend-item-1').append('<div></div>')
+            $('#friend-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
+            $('#friend-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
+            $('#friend-item-1>div').append(`<ul class='list-group' id='friend-item-2' style='width:30%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Time format</li>
+            </ul>`)
+            $('#friend-item-1>div').append(`<ul class='list-group' id='friend-item-3' style='width:30%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Options</li>
+            </ul>`)
+            data['time_formats'].forEach((e)=>{
+                $('#friend-item-1>div>#friend-item-2').append(`<li id='${e['format_id']}' class='list-group-item btn'>${e['format_name']}</li>`);
+                $(`#${e['format_id']}`).click(function(e) {
+                    $(this).parent().children('.active').removeClass('active');
+                    $(this).addClass('active');
+                });
+            });
+            data['options'].forEach((e)=>{
+                console.log(e);
+                $('#friend-item-1>div>#friend-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
+            });
+        });
+    });
+
+    $('.playDropDown-1>span').click(function(e) {
+        if ($(this).parent().children().length > 2 )
+            return;
+        $.get("{{url_for('play_api_get_human')}}").done((data)=>{
+            console.log(data);
+            e.stopPropagation();
+            $('#random-item-1').removeClass('btn');
+            $('#random-item-1').removeClass('btn-info');
+            $('#random-item-1').append('<div></div>')
+            $('#random-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
+            $('#random-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
+            $('#random-item-1>div').append(`<ul class='list-group' id='random-item-2' style='width:30%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Time format</li>
+            </ul>`)
+            $('#random-item-1>div').append(`<ul class='list-group' id='random-item-3' style='width:30%; display:inline-block;top:0;'> 
+            <li class='list-group-item'>Options</li>
+            </ul>`)
+            data['time_formats'].forEach((e)=>{
+                $('#random-item-1>div>#random-item-2').append(`<li id='${e['format_id']}' class='list-group-item btn'>${e['format_name']}</li>`);
+                $(`#${e['format_id']}`).click(function(e) {
+                    $(this).parent().children('.active').removeClass('active');
+                    $(this).addClass('active');
+                });
+            });
+            data['options'].forEach((e)=>{
+                console.log(e);
+                $('#random-item-1>div>#random-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
+            });
+            $('.list-group-item-danger').click(function(e) {
+        $(this).parent().addClass('btn btn-info');
+        $(this).parent().children('div').remove();
+        $(this).parent().children('.btn').remove();
+    })
+        });
+    });
+
+    
+
+</script>
+
 {%endblock%}
 
 {%block sitecontent%}
     <h3>Play</h3>
-    <div class='panel panel-primary'>
-        <div id='ai-panel'><a href="{{url_for('create_game', guest_id=-1)}}">Against AI</a></div>
-    </div>
-    <div>Against Random Player</div>
-    <div>Against Friend</div>
+    <ul class='list-group'>
+    <li id='ai-item-1' class='list-group-item list-group-item-info btn btn-info playDropDown'><span style='width:90%; display:inline;'>Against AI </span><span class='caret'></span></li>
+    <li id='random-item-1' class='list-group-item list-group-item-info btn btn-info playDropDown'><span style='width:90%;'>Against random player </span><span class='caret'></span></li>
+    <li id='friend-item-1' class='list-group-item list-group-item-info btn btn-info playDropDown'><span style='width:90%;'>Against friend </span><span class='caret'></span></li>
+    </ul>
 {%endblock%}

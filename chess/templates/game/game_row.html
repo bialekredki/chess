@@ -1,0 +1,13 @@
+<li class='list-group-item'>
+
+    {% if user.username != game.host.username%}
+        {% set oponent = game.host%}
+    {% else%}
+        {% set oponent = game.guest%}
+    {% endif%}
+    {% if oponent == None%}
+    <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs AI.{{game.AI}}</span>
+    {% else%}
+    <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
+    {% endif%}
+</li>

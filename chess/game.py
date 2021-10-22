@@ -35,7 +35,7 @@ class PieceType(enum.Enum):
     KING = 6
 
 class Game:
-    backRowSetup = [4, 2, 3, 5, 6, 3, 2, 4]
+    backRowSetup = [PieceType.ROOK.value, PieceType.KNIGHT.value, PieceType.BISHOP.value, PieceType.QUEEN.value, PieceType.KING.value, PieceType.BISHOP.value, PieceType.KNIGHT.value, PieceType.ROOK.value]
     def at(self, t:list)->Tile:
         return self.tiles[t[0]][t[1]]
     def is_tile_empty(self, t:list)->bool:
@@ -49,65 +49,51 @@ class Game:
     def add_vectors(self,t:list,v:list)->list:
         return [t[0]+v[0], t[1]+v[1]]
 
-    def get_moves(self,source:list):
+    def get_moves(self,source:list, collision:bool=True)->list:
         if self.is_tile_empty(source): return []
         tile = self.at(source)
-        if tile.piece == 1: return self.get_pawn_moves(tile, source)
-        if tile.piece == 2: return self.get_horsie_moves(tile, source)
-        if tile.piece == 3: return self.get_bishop_moves(tile,source)
-        if tile.piece == 4: return self.get_rook_moves(tile,source)
-        if tile.piece == 5: return self.get_queen_moves(tile,source)
-        if tile.piece == 6: return self.get_king_moves(tile,source)
+        if tile.piece == 1: return self.get_pawn_moves(tile, source, collision=collision)
+        if tile.piece == 2: return self.get_horsie_moves(tile, source, collision=collision)
+        if tile.piece == 3: return self.get_bishop_moves(tile,source, collision=collision)
+        if tile.piece == 4: return self.get_rook_moves(tile,source, collision=collision)
+        if tile.piece == 5: return self.get_queen_moves(tile,source, collision=collision)
+        if tile.piece == 6: return self.get_king_moves(tile,source, collision=collision)
 
-    def get_all_moves(self,colour:bool=None, order_by:MovesOrdering=MovesOrdering.BY_NONE, depth:bool=True)->Union[dict,list]:
+    def get_all_moves(self,colour:bool=None, order_by:MovesOrdering=MovesOrdering.BY_NONE, depth:bool=True, collision:bool=True)->Union[dict,list]:
         if order_by == MovesOrdering.BY_NONE:
             moves = list()
         else:
             moves = dict()
 
-        if self.check and not depth:
+        if self.check and self.turn == colour:
+            print('Check detected for ', colour)
             king = self.find_king(colour)
-            king_moves = self.get_king_moves(king['tile'], king['xy'])
-            saviours = list()
-            dangers = self.get_all_moves(colour=not colour,order_by=MovesOrdering.BY_DESTINATION, depth=False)[tuple(king['xy'])] #list
-            vanguard = self.get_all_moves(colour=colour, order_by=MovesOrdering.BY_DESTINATION, depth=False) # dict
-            for danger in dangers: #move[list]
-                if tuple(danger) in vanguard:
-                    for d in vanguard[tuple(danger)]:
-                        saviours.append([d, danger])
-                    danger_piece = self.at(danger)
-                if danger_piece == PieceType.ROOK or danger_piece == PieceType.QUEEN:
-                    rows = [self.row_xy(king['xy'][0], king['xy'][1], x) for x in [-1,1]]
-                    cols = [self.col_xy(king['xy'][1], king['xy'][0], x) for x in [-1,1]]
-                    for row in rows:
-                        if danger in row:
-                            for r in row:
-                                for s in vanguard.get(r):
-                                    saviours.append([s, r])
-                            break
-                    for col in cols:
-                        if danger in col:
-                            for r in col:
-                                for s in vanguard.get(r):
-                                    saviours.append([s, r])
-                            break
-                if danger_piece == PieceType.BISHOP or danger_piece == PieceType.QUEEN:
-                    diagonals = [self.diagonal(king['xy'],d) for d in [['up','left'], ['up', 'right'], ['down', 'right'], ['down', 'left']]]
-                    for diagonal in diagonals:
-                        if danger in diagonal:
-                            for tile in diagonal:
-                                if not self.is_tile_inbounds(tile): continue
-                                for s in vanguard.get(tile):
-                                    saviours.append([s, tile])
+            king_xy = king['xy']
+            king = king['tile']
+            print('King on ', king_xy, ' ', king)
+            print('King can run to', self.get_king_moves(king, king_xy))
+            for move in self.get_king_moves(king, king_xy):
+                print((king_xy, move))
+                moves.append((king_xy, move))
+            self.check = False
+            mo = self.get_all_moves(colour=not colour, order_by=MovesOrdering.BY_DESTINATION)
+            m = self.get_all_moves(colour=colour, order_by=MovesOrdering.BY_DESTINATION)
+            self.check = True
+            print('King is endangered by ',mo.get(king_xy))
+            print('Danger can be neutralised by', [m.get(tuple(x)) for x in mo.get(tuple(king_xy))])
+            for opo in mo.get(tuple(king_xy)):
+                if tuple(opo) not in m: continue
+                for my in m.get(tuple(opo)):
+                    print((my, opo))
+                    moves.append((my, opo))
+            return moves
             
-
-
 
         for r,row in enumerate(self.rows):
             for c,tile in enumerate(row.tiles):
-                if tile.is_empty() or colour is not None and tile.colour != colour: continue
+                if  tile.is_empty() or colour is not None and tile.colour != colour: continue
                 if not depth and tile.piece == 6: continue
-                tile_moves = self.get_moves([r,c])
+                tile_moves = self.get_moves([r,c], collision=collision)
                 if tile_moves is None: continue
                 if order_by == MovesOrdering.BY_SOURCE:
                     moves[(r,c)] = tile_moves
@@ -175,7 +161,7 @@ class Game:
                     return False
         return True
 
-    def get_pawn_moves(self,pawn:Tile,source:list)->list:
+    def get_pawn_moves(self,pawn:Tile,source:list, collision:bool=True)->list:
         moves = list()
         direction = 1 if pawn.colour else -1
         after_vector = self.add_vectors(source,[2*direction,0])
@@ -186,11 +172,11 @@ class Game:
             moves.append(after_vector)
         for tile in [[source[0]+1*direction, source[1]+a] for a in [-1,1]]:
             if not self.is_tile_inbounds(tile): continue
-            if self.is_tile_oponent(tile, pawn.colour):
+            if self.is_tile_oponent(tile, pawn.colour) or not collision and self.is_tile_own(tile, pawn.colour):
                 moves.append(tile)
         return moves
 
-    def get_horsie_moves(self,horsie:Tile,source:list)->list:
+    def get_horsie_moves(self,horsie:Tile,source:list, collision:bool=True)->list:
         moves = list()
         vectors = list()
         for x in [-2,-1,1,2]:
@@ -199,56 +185,56 @@ class Game:
                     vectors.append([x,y])
         for vector in vectors:
             after_vector = self.add_vectors(source,vector)
-            if self.is_tile_inbounds(after_vector) and  not self.is_tile_own(after_vector, horsie.colour):
+            if  not self.is_tile_inbounds(after_vector): continue
+            if  not collision and self.is_tile_own(after_vector, horsie.colour) or  not self.is_tile_own(after_vector, horsie.colour):
                 moves.append(after_vector)
         return moves
 
-    def get_bishop_moves(self,bishop:Tile,source:list)->list:
+    def get_bishop_moves(self,bishop:Tile,source:list, collision:bool=True)->list:
         moves = list()
         diagonals = [self.diagonal(source,d) for d in [['up','left'], ['up', 'right'], ['down', 'right'], ['down', 'left']]]
         for diagonal in diagonals:
             for tile in diagonal:
-                if self.is_tile_own(tile, bishop.colour): break
+                if self.is_tile_own(tile, bishop.colour) and collision: break
                 moves.append(tile)
-                if self.is_tile_oponent(tile, bishop.colour): break
+                if self.is_tile_oponent(tile, bishop.colour) or self.is_tile_own(tile, bishop.colour): break
         return moves
 
-    def get_rook_moves(self,rook:Tile,source:list)->list:
+    def get_rook_moves(self,rook:Tile,source:list, collision:bool=True)->list:
         moves = list()
         for x in [-1,1]:
             for r in range(1*x,8*x,x):
                 tile = self.add_vectors(source, [0,r])
                 if not self.is_tile_inbounds(tile): break
-                if self.is_tile_own(tile, rook.colour): break
+                if self.is_tile_own(tile, rook.colour) and collision: break
                 moves.append(tile)
-                if self.is_tile_oponent(tile, rook.colour): break
+                if self.is_tile_oponent(tile, rook.colour) or self.is_tile_own(tile, rook.colour) : break
         for x in [-1,1]:
             for r in range(1*x,8*x,x):
                 tile = self.add_vectors(source, [r,0])
                 if not self.is_tile_inbounds(tile): break
-                if self.is_tile_own(tile, rook.colour): break
+                if self.is_tile_own(tile, rook.colour) and collision: break
                 moves.append(tile)
-                if self.is_tile_oponent(tile, rook.colour): break
+                if self.is_tile_oponent(tile, rook.colour) or self.is_tile_own(tile, rook.colour) : break
         return moves
 
         
 
-    def get_queen_moves(self,queen:Tile, source:list)->list:
-        return self.get_bishop_moves(queen, source) + self.get_rook_moves(queen, source)
+    def get_queen_moves(self,queen:Tile, source:list, collision:bool=True)->list:
+        return self.get_bishop_moves(queen, source,collision) + self.get_rook_moves(queen, source,collision)
 
-    def get_king_moves(self, king:Tile, source:list, depth:bool=True)->list:
+    def get_king_moves(self, king:Tile, source:list, depth:bool=True, collision:bool=True)->list:
         moves = list()
         if depth:
-            opponents_moves = self.get_all_moves(colour=not king.colour, order_by=MovesOrdering.BY_DESTINATION, depth=False)
-            print(opponents_moves)
+            opponents_moves = self.get_all_moves(colour=not king.colour, order_by=MovesOrdering.BY_DESTINATION, depth=False, collision=False)
         else:
             opponents_moves = []
         for x in [-1,0,1]:
             for y in [-1,0,1]:
                 if x == 0 and y == 0: continue
                 tile = self.add_vectors(source, [x,y])
-                print(tile)
-                if not self.is_tile_inbounds(tile) or self.is_tile_own(tile,king.colour) or tuple(tile) in opponents_moves.keys(): continue
+                if not self.is_tile_inbounds(tile) or tuple(tile) in opponents_moves.keys(): continue
+                if collision and self.is_tile_own(tile, king.colour): continue
                 moves.append(tile)
         return moves
 
@@ -261,13 +247,16 @@ class Game:
         tsrc.piece = 0
         tsrc.colour = False
         tsrc.moved = False
+        self.check = False
 
     def find_king(self,colour:bool):
         return None
 
     def is_check(self,colour:bool)->bool:
-        print(self.find_king(colour))
-        if self.find_king(colour)['xy'] in self.get_all_moves(colour=not colour, order_by=MovesOrdering.BY_DESTINATION, depth=False).keys(): return True
+        if self.find_king(colour)['xy'] in self.get_all_moves(colour=not colour, order_by=MovesOrdering.BY_DESTINATION, depth=False, collision=False).keys(): return True
         return False
+
+    def set_check(self,colour:bool):
+        self.check = self.is_check(colour)
 
 

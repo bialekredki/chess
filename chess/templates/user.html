@@ -61,16 +61,13 @@
         </table>
     </div>
     <div id='games-container'>
+        <ul class='list-group'>
+        <li class='list-group-item list-group-item-info'>{{user.username}}'s games</li>
         {%for game in games%}
-            {%if user.username != game.host.username%}
-                {% set oponent = game.host%}
-            {%else%}
-                {% set oponent = game.guest%}
-            {%endif%}
-            <div class='game-container'>
-                <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
-            </div>
+            {%include 'game/game_row.html'%}
         {%endfor%}
+        <li class='list-group-item list-group-item-info btn btn-info'>Show all {{user.username}}'s games</li>
+        </ul>
     </div>
 
     <div id='posts-container'>

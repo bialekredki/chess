@@ -15,7 +15,7 @@ var socket = io();
         console.log('Socket connected');
         socket.emit('getgame', {id:"{{game.id}}"});
         {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
-            socket.emit('getcolour' ,{id:"{{game.id}}", player_id:"{{current_user.id}}"})
+            socket.emit('getcolour' ,{id:"{{game.id}}", player_id:"{{current_user.id}}"}, namespace=`/g${"{{game.id}}"}`)
         {%endif%}
     });
 
@@ -58,17 +58,26 @@ var socket = io();
     });
 
 
-    
+    getSpriteAt = (location) => {
+        let piece = null;
+        sprites.forEach(function(e) {
+            if (e.location[0] == location[0] && e.location[1] == location[1]) {
+                piece = e;
+                return;
+            }
+        });
+        return piece;
+    }
+
+
     pieceOnDragBegin = (event) => {
         let target = event.target;
-        console.log(target);
         if(target.objName == 'piece'){
             if(app.lastObj && app.lastObj.objName == 'piece'){
                 app.lastObj.alpha = 1;
                 tiles.forEach((tile)=>{
                     tile.alpha = 1;
                 });
-                console.log(colour)
                 if(game_state.at(app.lastObj.location[0], app.lastObj.location[1]).colour == colour && game_state.at(target.location[0], target.location[1]).colour != colour){
                     socket.emit('confirmmove', {
                         game: game_state,
@@ -101,11 +110,22 @@ var socket = io();
         return [(7-row)*size_y,col*size_x];
     };
 
+    removeSprite = (sprite) => {
+        sprites = sprites.filter(function(value,index,array) {
+            return (value.location[0] != sprite.location[0] && value.location[1] != sprite.location[1]);
+        });
+    }
+
     move = (piece,tile) => {
         let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
         let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
         let gs_tile_src = game_state.tiles[piece.location[0]][[piece.location[1]]];
         let gs_tile_dst = game_state.tiles[tile.location[0]][[tile.location[1]]];
+        let taken_piece = getSpriteAt(tile.location);
+        if(taken_piece != null){
+            container.removeChild(taken_piece);
+            removeSprite(taken_piece);
+        }
         [y,x] = rowColToXY(tile.location[0], tile.location[1], size_x, size_y);
         piece.x = x + size_x/2;
         piece.y = y + size_y/2;
@@ -114,6 +134,7 @@ var socket = io();
         gs_tile_dst.moved = true;
         gs_tile_src.piece = 0;
         gs_tile_src.colour = false;
+        gs_tile_src.moved = false;
         piece.location = tile.location;
     }
     renderApp = (app, game,textures) => {
@@ -179,8 +200,7 @@ var socket = io();
         let tiles = Array()
         let sprites = Array()
         let game_state = new Game();
-        let black_tile = 0x1c0a0f;
-        let black_tile_hinted = 0x832f47;
+        let black_tile = 0x832f47;
         let white_tile = 0xdb9eaf;
         let white_tile_hinted = 0xf1dae2;
         let colour = null;

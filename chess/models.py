@@ -194,6 +194,7 @@ class Game(ITimeStampedModel, ChessGame):
     host = db.relationship('User', backref='hostgames', lazy='joined', foreign_keys='Game.host_id')
     guest = db.relationship('User', backref='guestgames', lazy='joined', foreign_keys='Game.guest_id')
     is_host_white = db.Column(db.Boolean, default=True)
+    turn = db.Column(db.Boolean, default=True)
     check = db.Column(db.Boolean, default=False)
 
     def __init__(self,host_id,guest_id,is_host_white:bool=True, default_setup:bool=True, AI=None):
@@ -215,10 +216,16 @@ class Game(ITimeStampedModel, ChessGame):
                     self.set_piece((row,col), 1)
 
     def __repr__(self):
-        return f'<Game at={self.timestamp} state={self.state} between {self.host}{self.guest}>'
+        return f'<Game at={self.timestamp} state={self.state} between {self.host}{self.guest}> {self.all()}'
 
     def at(self,pos:Union[list,tuple]):
         return self.rows[pos[0]].get_tile(pos[1])
+    def all(self):
+        l = list()
+        for x in range(8):
+            for y in range(8):
+                l.append(self.at((x,y)))
+        return l
     def set_colour(self, pos:Union[list,tuple], colour:bool):
         self.rows[pos[0]].tiles[pos[1]].colour = colour
     def set_piece(self, pos:Union[list,tuple], piece:int):
@@ -228,12 +235,14 @@ class Game(ITimeStampedModel, ChessGame):
         db.session.commit()
 
     def find_king(self, colour:bool)->dict:
-        print('KING IN THE NORTH')
         for r,row in enumerate(self.rows):
             for t,tile in enumerate(row.tiles):
-                print(f'{tile.piece} == {PieceType.KING.value}')
                 if tile.piece == PieceType.KING.value and tile.colour == colour:
                     return {'xy': (r,t), 'tile': tile} 
+
+    def set_check(self, colour: bool):
+        super().set_check(colour)
+        db.session.commit()
 
 
 class RecoveryTry(ITimeStampedModel):
