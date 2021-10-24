@@ -27,3 +27,15 @@ def confrim_recovery_token(token, expiration=36000):
     except:
         return False
     return email,ipaddr,id
+
+def generate_game_invitation_token(host_id, guest_id):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps([host_id, guest_id], salt=app.config['SECURITY_PASSWORD_SALT'])
+
+def confirm_game_invitation_token(token, expiration=240):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    try:
+        host_id, guest_id = serializer.loads(token,salt=app.config['SECURITY_PASSWORD_SALT'], max_age=expiration)
+    except:
+        return False
+    return host_id, guest_id

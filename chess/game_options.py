@@ -1,9 +1,9 @@
 import enum
 class GameOption(enum.Enum):
-    EVAL_BAR = {'opt_id':'bar', 'opt_name':'Show evaluation bar', 'opt_type':'checkbox'}
-    RANKED = {'opt_id':'ranked', 'opt_name':'Ranked', 'opt_type':'checkbox'}
-    MIN_RANK = {'opt_id':'min_rank', 'opt_name':'Minimum rank', 'opt_type':'range'}
-    MAX_RANK = {'opt_id':'max_rank', 'opt_name':'Maximum rank', 'opt_type':'range'}
+    EVAL_BAR = {'id':'bar', 'name':'Show evaluation bar', 'type':'checkbox'}
+    RANKED = {'id':'ranked', 'name':'Ranked', 'type':'checkbox'}
+    MIN_RANK = {'id':'min_rank', 'name':'Minimum rank', 'type':'range', 'upper_limit':'max_rank'}
+    MAX_RANK = {'id':'max_rank', 'name':'Maximum rank', 'type':'range', 'lower_limit':'min_rank'}
 
     @classmethod
     def ai_options(self):
@@ -13,19 +13,24 @@ class GameOption(enum.Enum):
     def human_options(self):
         return [GameOption.RANKED.value, GameOption.MIN_RANK.value, GameOption.MAX_RANK.value]
 
+    @classmethod
+    def getbyname(self,name:str):
+        for option in list(self):
+            if option.value['id'] == name: return option
+
 
     
 class GameFormat(enum.Enum):
-    BULLET05 = {'format_id': 'bullet_05', 'format_name': "Bullet 30''", 'format_time': 30}
-    BULLET1 =  {'format_id': 'bullet_1', 'format_name': "Bullet 1'", 'format_time': 60}
-    BULLET2 = {'format_id': 'bullet_2', 'format_name': "Bullet 2'", 'format_time': 120}
-    BLITZ3 = {'format_id': 'blitz_3', 'format_name': "Blitz 3'", 'format_time': 180}
-    BLITZ5 = {'format_id': 'blitz_5', 'format_name': "Blitz 5'", 'format_time': 60*5}
-    BLITZ10 = {'format_id': 'blitz_10', 'format_name': "Blitz 10'", 'format_time': 60*10}
-    RAPID20 = {'format_id': 'rapid_20', 'format_name': "Rapid 20'", 'format_time': 60*20}
-    RAPID30 = {'format_id': 'rapid_30', 'format_name': "Rapid 30'", 'format_time': 60*30}
-    STANDARD1 = {'format_id': 'standard_1', 'format_name': "Standard 1h'", 'format_time': 60*60}
-    STANDARD2 = {'format_id': 'standard_2', 'format_name': "Standard 2h'", 'format_time': 60*60*2}
+    BULLET05 = {'id': 'bullet_05', 'name': "Bullet 30''", 'time': 30, 'type':'btn'}
+    BULLET1 =  {'id': 'bullet_1', 'name': "Bullet 1'", 'time': 60, 'type':'btn'}
+    BULLET2 = {'id': 'bullet_2', 'name': "Bullet 2'", 'time': 120, 'type':'btn'}
+    BLITZ3 = {'id': 'blitz_3', 'name': "Blitz 3'", 'time': 180, 'type':'btn'}
+    BLITZ5 = {'id': 'blitz_5', 'name': "Blitz 5'", 'time': 60*5, 'type':'btn'}
+    BLITZ10 = {'id': 'blitz_10', 'name': "Blitz 10'", 'time': 60*10, 'type':'btn'}
+    RAPID20 = {'id': 'rapid_20', 'name': "Rapid 20'", 'time': 60*20, 'type':'btn'}
+    RAPID30 = {'id': 'rapid_30', 'name': "Rapid 30'", 'time': 60*30, 'type':'btn'}
+    STANDARD1 = {'id': 'standard_1', 'name': "Standard 1h'", 'time': 60*60, 'type':'btn'}
+    STANDARD2 = {'id': 'standard_2', 'name': "Standard 2h'", 'time': 60*60*2, 'type':'btn'}
 
     @classmethod
     def all(self):

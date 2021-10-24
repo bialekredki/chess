@@ -82,3 +82,53 @@
 #root {
     border: solid 1px black;
 }
+
+.scrollable {
+    height: 100%;
+    overflow: hidden;
+    overflow-y: scroll;
+}
+
+.message.sent {
+    background-color: #efefef;
+    margin-left: 50%;
+}
+
+.message.received {
+    background-color: cornflowerblue;
+    color: white;
+}
+
+.message {
+    border-radius: 1em;
+    padding: 0.25em 0.75em;
+    margin: 0.0625em;
+    max-width: 50%;
+    margin-top: 10px;
+}
+
+.message.sent.first {
+    border-bottom-left-radius: 0.1em;
+}
+
+.message.sent.last {
+    border-top-left-radius: 0.1em;
+}
+
+.message.sent.middle {
+    border-bottom-left-radius: 0.1em;
+    border-top-left-radius: 0.1em;
+}
+
+.message.received.first {
+    border-bottom-right-radius: 0.1em;
+}
+
+.message.received.last {
+    border-top-right-radius: 0.1em;
+}
+
+.message.received.middle {
+    border-bottom-right-radius: 0.1em;
+    border-top-right-radius: 0.1em;
+}

@@ -1,0 +1,64 @@
+{% extends 'main.html' %}
+
+{%block scripts%}
+  {{super()}}
+<script>
+  
+    $.get("{{url_for('api_messages')}}", {'conversation':true, 'unseen':true, 'received':true, 'seen':true, 'sent':true}).done((data)=>{
+        console.log(data);
+        Object.keys(data).forEach(function(value,index,array){
+            if (index==0) $('#conversation-list').append(`<li class='list-group-item btn active' id='${value}'>${value}</li>`)
+            else $('#conversation-list').append(`<li class='list-group-item btn ' id='${value}'>${value}</li>`)
+        });
+        $('#conversation-list>li').click(function(e) {
+            $('#conversation-list').children('.active').removeClass('active');
+            $(this).addClass('active')
+            $.get("{{url_for('api_messages')}}", {'conversation':true, 'unseen':true, 'received':true, 'seen':true, 'sent':true,'users':[$(this).html()]}).done((data)=>{
+                $('#conversation').children().remove();
+                console.log(Object.entries(data))
+                populateConversation(Object.entries(data)[0][1])
+            })
+        });
+        console.log(Object.entries(data)[0])
+        populateConversation(Object.entries(data)[0][1])
+    });
+
+    populateConversation = (messages) => {
+        messages.forEach(function(value,index,array) {
+            let className = "sent"
+
+            if (value['receiver'] == "{{current_user.username}}") className = 'received';
+            $('#conversation').append(`<li class='list-group-item message ${className}'>${value['content']}</li>`)
+            let maxWidth = $('#conversation>li').css('width');
+
+        })
+    }
+
+    $('#message-input').on('keypress', function(e) {
+        if (e.which == 13){
+            if ($('#message-input').val() == '') return;
+            $.post("{{url_for('api_messages_send')}}", {'content':$('#message-input').val(), 'receiver':$('#conversation-list').children('.active').html()}).done(()=>{
+                $('#conversation').append(`<li class='list-group-item message sent'>${$('#message-input').val()}</li>`)
+                $('#message-input').val('');
+            });
+        }
+    });
+</script>
+{%endblock%}
+
+
+{%block sitecontent%}
+<div class='row'>
+    <div class='panel panel-info col-md-3' style='height:90vh;'>
+        <div class='panel-heading'><div class='panel-title'>Conversations</div></div>
+        <ul id='conversation-list' class='list-group'>
+        </ul>
+    </div>
+    <div class='col-md-9 panel panel-info' style='height:90vh;'>
+        <div id='messages-container' style='height:85vh;'>
+            <ul id='conversation' class='list-group scrollable'></ul>
+        </div>
+        <div class='panel-footer' style='padding:none;margin-top:2px;'><input id='message-input' type='text' style='height:100%;width:100%;'></input> </div>
+    </div>
+
+{%endblock%}

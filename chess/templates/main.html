@@ -8,7 +8,33 @@
 
 {%block scripts%}
      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+
      <script>
+        var message_socket = io(`/messages-${"{{current_user.id}}"}`)
+        message_socket.on('send_message', function(data) {
+            console.log(data)
+            let x = $('#nav-messages').children().children('.badge').html()
+            if (x=='')  $('#nav-messages').children().children('.badge').html(1)
+            else $('#nav-messages').children().children('.badge').html(parseInt(x)+1)
+            if ($('#conversation-list').length == 0 || $('#conversation-list>.active').attr('id') != data['sender']) return;
+            console.log(`${$('#conversation-list>.active').attr('id')} != ${data['sender']}`)
+            $.get("{{url_for('api_messages')}}", {'conversation':true, 'unseen':true, 'received':true, 'seen':true, 'sent':true,'users':[data['sender']]}).done((data)=>{
+                $('#conversation').children().remove();
+                console.log(Object.entries(data))
+                populateConversation(Object.entries(data)[0][1])
+            })
+        })
+        message_socket.on('game_ready', function(data) {
+            location.href = data['url'];
+            console.log(data)
+        });
+
+        $.get("{{url_for('api_messages')}}", {'unseen':true, 'received':true, 'count':true}).done((data)=>{
+            console.log(data)
+            $('#nav-messages').children().children('.badge').html(`${data['len']}`)
+        });
+
         search_user = (e) => {
             console.log(e)
             $.post('/search_user', {data: e.value, records:10}).done((data)=>{
@@ -35,6 +61,7 @@
             window.location = `/me/${user.textContent}`;
         };
 
+
         $('#navbar-search').focusout(()=>{
             console.log('x')
             if($('#search-users').length && !$('#search-users').is(':focus') && !$('#search-users').is(':hover'))
@@ -58,13 +85,15 @@
                 <li><a href="{{url_for('index')}}"><span class="glyphicon glyphicon-home"></span>Home</a></li>
                 <li><a href="{{url_for('play')}}">Play</a></li>
                 <li><a href="{{url_for('blog')}}">Learn</a></li>
-                <li><a href="{{url_for('blog')}}">Messages</a></li>
+                <li id='nav-messages'>
+                <a href="{{url_for('messages')}}">Messages<span class='badge'></span></a></li>
             </ul>
             <ul class='nav navbar-nav navbar-right'>
                 <li><span class="glyphicon glyphicon-search"><input id='navbar-search' type='text' oninput='search_user(this)' onclick='search_user(this)'></li>
                 {%if current_user.is_anonymous%}
                     <li><a href="{{url_for('login')}}">Login</a></li>
-                    <li><a href="{{url_for('create_account')}}">Register</a></li>
+                    <li><a href="{{url_for('create_account')}}">Register</a>
+                    </li>
                 {%else%}
                     <li>
                     <a href="{{url_for('user', username=current_user.username)}}">

@@ -56,7 +56,6 @@ class User(UserMixin, ITimeStampedModel):
     password_hash = db.Column(db.String(128))
     has_avatar = db.Column(db.Boolean, default=False)
     posts = db.relationship('BlogPost', backref='author', lazy='dynamic')
-    messages = db.relationship('Message', backref='receiver', lazy='dynamic')
     recoverytries = db.relationship('RecoveryTry')
     last_active = db.Column(db.DateTime(128), default=datetime.utcnow)
     is_confirmed = db.Column(db.Boolean, default=False)
@@ -182,7 +181,19 @@ class Message(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(1024))
     timestamp = db.Column(db.DateTime(128), index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    sender = db.relationship('User', backref='sent', lazy='joined', foreign_keys='Message.sender_id')
+    receiver = db.relationship('User', backref='received', lazy='joined', foreign_keys='Message.receiver_id')
+    sender_seen = db.Column(db.Boolean, default=False)
+    receiver_seen = db.Column(db.Boolean, default=False)
+
+    def jsonify(self):
+        return {'id': self.id, 'content': self.content, 'timestamp':self.timestamp_creation, 'sender':self.sender.username, 'receiver':self.receiver.username}
+
+    def mark_as_seen(self):
+        self.receiver_seen = True
+        db.session.commit()
 
 class Game(ITimeStampedModel, ChessGame):
     id = db.Column(db.Integer, primary_key=True)
@@ -271,6 +282,17 @@ class GameTile(db.Model):
 
     def __repr__(self) -> str:
         return  f'<GameTile {self.id} {self.xy()}{[self.piece,self.colour,self.moved]}>'
+
+    def toFEN(self)->str:
+        p = ''
+        if self.piece == 1: p = 'p'
+        elif self.piece == 2: p = 'n'
+        elif self.piece == 3: p = 'b'
+        elif self.piece == 4: p = 'r'
+        elif self.piece == 5: p = 'q'
+        elif self.piece == 6: p = 'k'
+        if self.colour: return p.upper()
+        return p
 
     def xy(self) -> tuple:
         return ({self.row.row, self.column})

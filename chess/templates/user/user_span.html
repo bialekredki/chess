@@ -1,0 +1,7 @@
+{%if user.has_avatar%}
+    {%set imgfile = "/img/avatar/{}_mini.png".format(user.id)%}
+    <img src="{{url_for('static', filename=imgfile)}}">
+{%endif%}
+<a href="{{url_for('user', username=user.username)}}"><span class='username'>{{user.username}}</span></a>
+{{user.elo}}
+{{user.get_posts_count()}}

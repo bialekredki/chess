@@ -1,8 +1,10 @@
 from datetime import datetime
 from re import S
+import re
 from flask.helpers import flash
 from flask.json import jsonify
 from flask_login.utils import login_required
+from sqlalchemy.sql.elements import conv
 from chess import app, db, socketio, mail
 from flask import render_template, redirect, url_for, request
 from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StupidAI, get_ai
@@ -12,7 +14,7 @@ from chess.game_options import GameFormat, GameOption
 from chess.models import BlogPost, BlogPostComment, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
-from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_recovery_token
+from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token
 from chess.utils import round_datetime
 from sqlalchemy import or_
 from flask_socketio import SocketIO,send,emit
@@ -153,6 +155,56 @@ def create_account():
         return  redirect(url_for('index'))
     return render_template('register.html', title='Register', form=form)
 
+@app.route('/messages', methods=['GET', "POST"])
+def messages():
+    return render_template('messages.html', title='Messages')
+
+@app.route('/api/user/messages', methods=['GET'])
+def api_messages():
+    messages = list()
+    conversations = dict()
+    all = {'sent':current_user.sent, 'received':current_user.received}
+    for key,ms in all.items():
+        if request.args.get(key) is None or not request.args.get(key):continue
+        for m in ms:
+            if key == 'received' and not m.receiver_seen:
+                m.mark_as_seen()
+                print(m.receiver_seen)
+            if key == 'sent':
+                messages.append(m)
+            if (key == 'received' and m.receiver_seen) and request.args.get('seen', False):
+                messages.append(m)
+            if (key == 'received' and not m.receiver_seen) and request.args.get('unseen', False):
+                messages.append(m)
+
+    messages.sort(key=lambda x:x.timestamp_creation,reverse=False)
+    if request.args.get('conversation'):
+        for m in messages:
+            if request.args.get('users[]') is not None:
+                for user in request.args.getlist('users[]'):
+                    u:User = User.query.filter_by(username=user).first()
+                    if user not in conversations: conversations[user] = list()
+                    if m.sender_id == u.id or m.receiver_id == u.id:
+                        conversations[user].append(m.jsonify())
+                        break
+            else:
+                id = m.sender_id if m.receiver_id == current_user.id else m.receiver_id
+                u:User = User.query.filter_by(id=id).first()
+                if u.username not in conversations: conversations[u.username] = list()
+                conversations[u.username].append(m.jsonify())
+    if request.args.get('count'):return jsonify({'len':len(messages)})
+    if request.args.get('conversation'): return jsonify(conversations)
+    return jsonify({'messages':messages})
+
+@app.route('/api/user/messages', methods=['POST'])
+def api_messages_send():
+    m:Message = Message(sender_id = current_user.id, receiver_id = User.query.filter_by(username=request.form['receiver']).first().id, content=request.form['content'])
+    db.session.add(m)
+    db.session.commit()
+    socketio.emit('send_message', {'sender': current_user.username}, namespace=f"/messages-{User.query.filter_by(username=request.form['receiver']).first().id}")
+    return ('', 200)
+
+
 @app.route('/forgot_password', methods=['GET','POST'])
 def forgot_password():
     if current_user.is_authenticated:
@@ -262,15 +314,31 @@ def submit_image():
 def play():
     return render_template('play.html')
 
-@app.route('/api/play/ai_options', methods=['GET'])
+@app.route('/api/play/game_setup', methods=['GET'])
 @login_required
-def play_api_get_ai():
-    return jsonify({'ai_names':AI_INTEGRATIONS_NAMES_LIST, 'options':GameOption.ai_options()})
+def api_play_game_setup():
+    result = dict()
+    app.logger.info("%s [API] %s %s", current_user.username, __name__, request.args)
+    if request.args.get('ai'):
+        result['AI'] = list()
+        for name in AI_INTEGRATIONS_NAMES_LIST:
+            result['AI'].append({'id':name, 'name':name, 'type':'btn'})
+    
+    if request.args.get('friends'):
+        result['Friends'] = list()
+        for friend in current_user.friends:
+            result['Friends'].append({'id': friend.username, 'name':render_template('user/user_span.html', user=friend), 'type':'btn'})
 
-@app.route('/api/play/human_options', methods=['GET'])
-@login_required
-def play_api_get_human():
-    return jsonify({'options':GameOption.human_options(), 'time_formats':GameFormat.all()})
+    if request.args.get('time'):
+        result['Time Control'] = GameFormat.all()
+
+    if request.args.get('options[]'):
+        result['Options'] = list()
+        for option in request.args.getlist('options[]'):
+            result['Options'].append(GameOption.getbyname(option).value)
+    return jsonify(result)
+
+
 
 
 @app.route('/play/<id>')
@@ -282,26 +350,43 @@ def game(id):
 def message_handler(data):
     send(data)
 
-@app.route('/play/new', methods=['GET', 'POST'])
+@app.route('/play/new', methods=['POST'])
 @login_required
 def create_game(guest_id:int=None,type:int=0):
-    if guest_id is None and request.args.get('guest_id'):
-        guest_id = int(request.args.get('guest_id'))
-    if guest_id is None: return # look for a player
-    print('New game')
+    app.logger.error("%s [GAME] starts a new game with %s", current_user.username, request.form)
+    if request.form.get('AI'):
+        guest_id = -1
+        g = Game(current_user.id, guest_id, AI='Stupid')
+        db.session.add(g)
+        db.session.commit()
+        return url_for(f'game', id=g.id)
+    if request.form.get('Friends') is not None:
+        guest:User = User.query.filter_by(username=request.form.get('Friends')).first()
+        guest_id = guest.id
+        token = generate_game_invitation_token(current_user.id, guest_id)
+        message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, content=f"Invites you to <a href='{url_for('create_game_invitation', token=token)}'>game</a>")
+        socketio.emit('send_message', {'sender': current_user.username}, namespace=f'/messages-{guest_id}')
+        db.session.add(message)
+        db.session.commit()
+        return ('', 200)
+    if guest_id is None: return ('', 200)
+
+
+@app.route('/play/new/<token>', methods=['GET','POST'])
+@login_required
+def create_game_invitation(token):
+    print(token)
     try:
-        if guest_id == -1: 
-            g = Game(current_user.id, guest_id, AI='Stupid')
-            print(g.AI)
-        else: 
-            g = Game(current_user.id, guest_id)
-            print('no ai')
+        host_id, guest_id = confirm_game_invitation_token(token)
     except:
-        app.logger.error("%s submitted a move without permission[guest]", current_user.username,exc_info=True)
         return redirect(url_for('index'))
-    db.session.add(g)
+
+    if guest_id != current_user.id: return redirect(url_for('index'))
+    game:Game = Game(host_id,guest_id)
+    db.session.add(game)
     db.session.commit()
-    return redirect(url_for(f'game', id=g.id))
+    socketio.emit('game_ready', {'url': url_for('game', id=game.id)} , namepsace=f'/messages-{host_id}')
+    return redirect(url_for('game', id=game.id))
 
 @socketio.on('getgame')
 def set_game(js,methods='GET'):
@@ -335,6 +420,7 @@ def confirm_move(js, methods='GET'):
     app.logger.info("Move request\n%s", str(js))
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
+    game.FENotation()
     print('FUCKING TURN', game.turn)
     if not game.compare_with_js(js['game']['tiles']):
         app.logger.info("Comparison failed")

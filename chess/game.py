@@ -259,4 +259,62 @@ class Game:
     def set_check(self,colour:bool):
         self.check = self.is_check(colour)
 
+    def check_for_castling(self, colour:bool)->list:
+        return [self.check_for_castling_ks(colour), self.check_for_castling_qs(colour)]
+
+    def check_for_castling_qs(self, colour:bool)->bool:
+        if colour:
+            pos = {'king':(0,4), 'rook':(0,0)}
+        else:
+            pos = {'king':(7,4), 'rook':(7,0)}
+        rook = self.at(pos['rook'])
+        king = self.at(pos['king'])
+        if king.piece != PieceType.KING.value or rook.piece != PieceType.ROOK.value: return False
+        if king.colour != colour or rook.colour != colour: return False
+        if king.moved or rook.moved: return False
+        return True
+
+    def check_for_castling_ks(self, colour:bool)->bool:
+        if colour:
+            pos = {'king':(0,4), 'rook':(0,7)}
+        else:
+            pos = {'king':(7,4), 'rook':(7,7)}
+        rook = self.at(pos['rook'])
+        king = self.at(pos['king'])
+        if king.piece != PieceType.KING.value or rook.piece != PieceType.ROOK.value: return False
+        if king.colour != colour or rook.colour != colour: return False
+        if king.moved or rook.moved: return False
+        return True
+
+    def FENotation(self):
+        print('FEN')
+        fen = list()
+        for row in reversed(self.rows):
+            rowlist = list()
+            empty = 0
+            for i,tile in enumerate(row.tiles):
+                x = tile.toFEN()
+                if x == '':
+                    empty += 1
+                else:
+                    if empty > 0:
+                        rowlist.append(f'{empty}')
+                        empty = 0
+                    rowlist.append(x)
+                if i == len(row.tiles) - 1 and empty != 0:
+                    rowlist.append(f'{empty}')
+            fen.append(''.join(rowlist))
+        res = '/'.join(fen)
+        if self.turn:
+            res = res + ' w '
+        else:
+            res = res + ' b '
+        for colour in [True,False]:
+            x = self.check_for_castling(colour)
+            if colour and x[0]: res = res + 'K'
+            if colour and x[1]: res = res + 'Q'
+            if not colour and x[0]: res = res + 'k'
+            if not colour and x[1]: res = res + 'q'
+        print(res)
+
 

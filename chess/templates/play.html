@@ -4,102 +4,118 @@
 {{super()}}
 
 <script>
-    $('#ai-item-1>span').click(function(e) {
-        if ($(this).parent().children().length > 2 )
+    $('.playDropDown>span').click(function(e) {
+        let parent = $(this).parent();
+        console.log(parent)
+        if (parent.children().length > 2 ){
             return;
-        $.get("{{url_for('play_api_get_ai')}}").done((data)=>{
-            console.log(data);
-            console.log(this);
-            e.stopPropagation();
-            $('#ai-item-1').removeClass('btn');
-            $('#ai-item-1').removeClass('btn-info');
-            $('#ai-item-1').append('<div></div>')
-            $('#ai-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
-            $('#ai-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
-            $('#ai-item-1>div').append(`<ul class='list-group' id='ai-item-2' style='width:50%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Choose your fighter</li>
-            </ul>`)
-            $('#ai-item-1>div').append(`<ul class='list-group' id='ai-item-3' style='width:50%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Options</li>
-            </ul>`)
-            data['ai_names'].forEach((e)=>{
-                $('#ai-item-1>div>#ai-item-2').append(`<li id='${e}' class='list-group-item btn'>${e}</li>`);
-                $(`#${e}`).click(function(e) {
-                    $(this).parent().children('.active').removeClass('active');
-                    $(this).addClass('active');
-                });
-            });
-            data['options'].forEach((e)=>{
-                console.log(e);
-                $('#ai-item-1>div>#ai-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
-            });
-        });
-    });
+        }
+        
+        let uri = "{{url_for('api_play_game_setup')}}"
+        let payload = {};
+        if ($(this).parent().attr('id') == 'ai-item-1'){
+            payload['options'] = ['bar'];
+            payload['ai'] = true;
+        }
+        else if ($(this).parent().attr('id') == 'friend-item-1'){
+            payload['options'] = ['ranked'];
+            payload['friends'] = true;
+            payload['time'] = true;
+        }
+        else{
+            payload['options'] = ['ranked', 'max_rank', 'min_rank'];
+            payload['time'] = true;
+        }
 
-    $('#friend-item-1>span').click(function(e) {
-        if ($(this).parent().children().length > 2 )
-            return;
-        $.get("{{url_for('play_api_get_human')}}").done((data)=>{
+        $.get(uri, payload).done((data)=>{
             console.log(data);
             e.stopPropagation();
-            $('#friend-item-1').removeClass('btn');
-            $('#friend-item-1').removeClass('btn-info');
-            $('#friend-item-1').append('<div></div>')
-            $('#friend-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
-            $('#friend-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
-            $('#friend-item-1>div').append(`<ul class='list-group' id='friend-item-2' style='width:30%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Time format</li>
-            </ul>`)
-            $('#friend-item-1>div').append(`<ul class='list-group' id='friend-item-3' style='width:30%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Options</li>
-            </ul>`)
-            data['time_formats'].forEach((e)=>{
-                $('#friend-item-1>div>#friend-item-2').append(`<li id='${e['format_id']}' class='list-group-item btn'>${e['format_name']}</li>`);
-                $(`#${e['format_id']}`).click(function(e) {
-                    $(this).parent().children('.active').removeClass('active');
-                    $(this).addClass('active');
+            parent.removeClass('btn');
+            parent.removeClass('btn-info');
+            parent.append('<div></div>')
+            parent.append("<li class='list-group-item list-group-item-success btn'>Play</li>")
+            parent.append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
+            let namespace = '';
+            if (parent.children('span').html().includes('friend')) namespace = 'friend';
+            else if (parent.children('span').html().includes('random')) namespace = 'random';
+            else if (parent.children('span').html().includes('AI')) namespace = 'ai';
+            Object.entries(data).forEach((item, index, array) =>{
+                console.log(item);
+                let width = 100 / array.length - 1;
+                $(`#${namespace}-item-1>div`).append(`<div style='width:${width}%; display:inline-block;'><ul class='list-group scrollable'  style='height:inherit;' id='${namespace}-item-${index+2}' > 
+                    <li class='list-group-item ' style='background-color:#c3c6c9;'>${item[0]}</li>
+                    </ul></div>`)
+                let list = $(`#${namespace}-item-${index+2}`);
+                item[1].forEach((item,index,array) => {
+                    console.log(item);
+                    list.append(`<li id='${item['id']}' class='list-group-item'>${item['name']}</li>`)
+                    if (item['type'] == 'btn'){
+                        $(`#${item['id']}`).addClass('btn');
+                        $(`#${item['id']}`).click(function(e) {
+                            list.children('.active').removeClass('active');
+                            $(this).addClass('active');
+                        });
+                    }
+                    else {
+                        $(`#${item['id']}`).append(`<span style='margin-left:10px;'></span>`);
+                        $(`#${item['id']}`).append(`<input type='${item['type']}' id='${item['id']}-input' max='2500' min='0'>`);
+                        if (item['type'] == 'range'){
+                            $(`#${item['id']}>input`).on('change', function(e) {
+                                if ('upper_limit' in item) {
+                                    if (parseInt($(`#${item['upper_limit']}>input`).val()) < parseInt($(this).val())){
+                                        $(this).val($(`#${item['upper_limit']}>input`).val())
+                                    }
+                                }
+                                if ('lower_limit' in item) {
+                                    if (parseInt($(`#${item['lower_limit']}>input`).val()) > parseInt($(this).val())){
+                                        $(this).val($(`#${item['lower_limit']}>input`).val());
+                                    }   
+                                }
+                                $(`#${item['id']}>span`).html($(this).val())
+                            });
+                            $(`#${item['id']}>input`).mousemove(function(e) {
+                                if ('upper_limit' in item) {
+                                    if (parseInt($(`#${item['upper_limit']}>input`).val()) < parseInt($(this).val())){
+                                        $(this).val($(`#${item['upper_limit']}>input`).val());
+                                    }   
+                                }
+                                if ('lower_limit' in item) {
+                                    if (parseInt($(`#${item['lower_limit']}>input`).val()) > parseInt($(this).val())){
+                                        $(this).val($(`#${item['lower_limit']}>input`).val());
+                                    }   
+                                }
+                                $(`#${item['id']}>span`).html($(this).val())
+                            });
+                        }
+                    }
                 });
-            });
-            data['options'].forEach((e)=>{
-                console.log(e);
-                $('#friend-item-1>div>#friend-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
-            });
-        });
-    });
-
-    $('.playDropDown-1>span').click(function(e) {
-        if ($(this).parent().children().length > 2 )
-            return;
-        $.get("{{url_for('play_api_get_human')}}").done((data)=>{
-            console.log(data);
-            e.stopPropagation();
-            $('#random-item-1').removeClass('btn');
-            $('#random-item-1').removeClass('btn-info');
-            $('#random-item-1').append('<div></div>')
-            $('#random-item-1').append("<li class='list-group-item list-group-item-success btn'>Play</li>")
-            $('#random-item-1').append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
-            $('#random-item-1>div').append(`<ul class='list-group' id='random-item-2' style='width:30%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Time format</li>
-            </ul>`)
-            $('#random-item-1>div').append(`<ul class='list-group' id='random-item-3' style='width:30%; display:inline-block;top:0;'> 
-            <li class='list-group-item'>Options</li>
-            </ul>`)
-            data['time_formats'].forEach((e)=>{
-                $('#random-item-1>div>#random-item-2').append(`<li id='${e['format_id']}' class='list-group-item btn'>${e['format_name']}</li>`);
-                $(`#${e['format_id']}`).click(function(e) {
-                    $(this).parent().children('.active').removeClass('active');
-                    $(this).addClass('active');
-                });
-            });
-            data['options'].forEach((e)=>{
-                console.log(e);
-                $('#random-item-1>div>#random-item-3').append(`<li id='${e['opt_id']}' class='list-group-item'>${e['opt_name']}<input type='${e['opt_type']}'></input></li>`)
             });
             $('.list-group-item-danger').click(function(e) {
-        $(this).parent().addClass('btn btn-info');
-        $(this).parent().children('div').remove();
-        $(this).parent().children('.btn').remove();
-    })
+                parent.addClass('btn btn-info');
+                parent.children('div').remove();
+                parent.children('.btn').remove();
+            });
+            $('.list-group-item-success').click(function(e) {
+                let options = new Object();
+                parent.children('div').children('div').each(function(index, value){
+                    if($(this).children().children('.active').length > 0){
+                        options[$(this).children().children().html()] = $(this).children().children('.active').attr('id')
+                    }
+                    else {
+                        $(this).children().children().each(function(index, value) {
+                            if(index==0 || $(value).children('input').lenght > 0) return;
+                            if($(value).children('input').attr('type') == 'checkbox') options[$(value).attr('id')] = $(value).children('input').is(':checked')
+                            else options[$(value).attr('id')] = $(value).children('input').val();
+                        });
+                    }
+                });
+                console.log(options)
+                if (Object.values(options).includes(undefined)) return;
+                $.post("{{url_for('create_game')}}", options).done((data)=>{
+                    console.log(data);
+                });
+
+            });
         });
     });
 

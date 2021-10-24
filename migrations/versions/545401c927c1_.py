@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 8bfa691f55e2
+Revision ID: 545401c927c1
 Revises: 
-Create Date: 2021-10-17 22:27:14.121682
+Create Date: 2021-10-23 20:47:38.526852
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '8bfa691f55e2'
+revision = '545401c927c1'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -58,6 +58,9 @@ def upgrade():
     sa.Column('guest_id', sa.Integer(), nullable=True),
     sa.Column('state', sa.Integer(), nullable=True),
     sa.Column('AI', sa.String(length=32), nullable=True),
+    sa.Column('is_host_white', sa.Boolean(), nullable=True),
+    sa.Column('turn', sa.Boolean(), nullable=True),
+    sa.Column('check', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['guest_id'], ['user.id'], ),
     sa.ForeignKeyConstraint(['host_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -71,8 +74,10 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content', sa.String(length=1024), nullable=True),
     sa.Column('timestamp', sa.DateTime(timezone=128), nullable=True),
-    sa.Column('user_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('sender_id', sa.Integer(), nullable=True),
+    sa.Column('receiver_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['receiver_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['sender_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('message', schema=None) as batch_op:
