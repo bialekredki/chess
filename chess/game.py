@@ -2,22 +2,24 @@
 from typing import Union
 import enum
 import json
-from chess.AI import StupidAI
+from chess.AI import StupidAI, StockfishIntegrationAI
 
 class Tile:
-    def __init__(self):
-        self.piece = 0 
-        self.colour = False
-        self.moved = False
+    def __init__(self,piece:int=0,colour:bool=False):
+        self.piece = piece
+        self.colour = colour
 
     def __repr__(self) -> str:
-        return f'<Tile {[self.piece,self.colour,self.moved]}>'
+        return f'<Tile {[self.piece,self.colour,]}>'
 
     def jsonify(self) -> dict:
-        return {'piece':self.piece, 'colour': self.colour, 'moved': self.moved}
+        return {'piece':self.piece, 'colour': self.colour}
 
     def is_empty(self)->bool:
         return True if self.piece == 0 else False
+
+def move_list_to_algebraic(move):
+    return chr(move[0][0] + ord('a')) + str(move[0][1]+1) + chr(move[1][0] + ord('a')) + str(move[1][1]+1)
 
 
 class MovesOrdering(enum.Enum):
@@ -34,8 +36,32 @@ class PieceType(enum.Enum):
     QUEEN = 5
     KING = 6
 
+class Move:
+    def __init__(self, src:Union[list,tuple], dest:Union[list,tuple]):
+        self.src = src
+        self.dest = dest
+
+    # [0,0] -> 
+    def algebraic(self)->str:
+        return chr(self.src[1] + ord('a')) + str(self.src[0]+1) + chr(self.dest[1] + ord('a')) + str(self.dest[0]+1)
+
+    def jsonify(self)->dict:
+        return {'from':self.src, 'to':self.dest}
+
+    @classmethod
+    def from_algebraic(self,algebraic:str)->list:
+        return [[int(algebraic[1]) - 1, ord(algebraic[0]) - ord('a')] , [int(algebraic[3])-1, ord(algebraic[2]) - ord('a')]]
+
+
 class Game:
-    backRowSetup = [PieceType.ROOK.value, PieceType.KNIGHT.value, PieceType.BISHOP.value, PieceType.QUEEN.value, PieceType.KING.value, PieceType.BISHOP.value, PieceType.KNIGHT.value, PieceType.ROOK.value]
+    
+    def __init__(self, array:list, FEN:str=None):
+        self.tiles = list()
+        self.FEN = FEN
+        for r,row in enumerate(array):
+            self.tiles.append(list())
+            for col in row:
+                self.tiles[r].append(Tile(col['piece'], col['colour']))
     def at(self, t:list)->Tile:
         return self.tiles[t[0]][t[1]]
     def is_tile_empty(self, t:list)->bool:
@@ -64,8 +90,9 @@ class Game:
             moves = list()
         else:
             moves = dict()
+        ryba = StockfishIntegrationAI(self.FEN)
 
-        if self.check and self.turn == colour:
+        """if self.check and self.turn == colour:
             print('Check detected for ', colour)
             king = self.find_king(colour)
             king_xy = king['xy']
@@ -86,11 +113,11 @@ class Game:
                 for my in m.get(tuple(opo)):
                     print((my, opo))
                     moves.append((my, opo))
-            return moves
+            return moves"""
             
 
-        for r,row in enumerate(self.rows):
-            for c,tile in enumerate(row.tiles):
+        for r,row in enumerate(self.tiles):
+            for c,tile in enumerate(row):
                 if  tile.is_empty() or colour is not None and tile.colour != colour: continue
                 if not depth and tile.piece == 6: continue
                 tile_moves = self.get_moves([r,c], collision=collision)
@@ -100,19 +127,22 @@ class Game:
                     continue
                 for move in tile_moves:
                     if order_by == MovesOrdering.BY_NONE:
-                        moves.append(([r,c], move))
+                        moves.append(move)
                     if order_by == MovesOrdering.BY_DESTINATION:
                         key = tuple(move)
                         if moves.get(key) is None:
                             moves[key] = list()
                         moves[key].append([r,c])
+        
+        for move in moves:
+            print(f'{move.algebraic()} {ryba.is_possible(move.algebraic())}')
         return moves
 
     def row(self,r:int,start:int=0,step:int=1)->list:
         if not 0<=r<=7 and 0<=start<=7 and -7<=step<=7 and step != 0: return list()
         if step < 0: stop = -8
         else: stop = 8
-        return self.rows[r].tiles[start:stop:step]
+        return self.tiles[r][start:stop:step]
 
     def row_xy(self,r:int,start:int=0,step:int=1)->list:
         return [t.xy() for t in self.row()]
@@ -123,7 +153,7 @@ class Game:
         else: stop = 8
         res = list()
         for x in range(start,stop,step):
-            res.append(self.rows[x].tiles[c])
+            res.append(self.tiles[x][c])
         return res
 
     def col_xy(self,c:int,start:int=0,step:int=1)->list:
@@ -156,7 +186,7 @@ class Game:
             for col in range(8):
                 server_tile = self.at([row,col])
                 client_tile = js[row][col]
-                if server_tile.piece != client_tile['piece'] or server_tile.colour != client_tile['colour'] or server_tile.moved != client_tile['moved']: 
+                if server_tile.piece != client_tile['piece'] or server_tile.colour != client_tile['colour']: 
                     print(f'{server_tile}\t{client_tile}')
                     return False
         return True
@@ -165,15 +195,15 @@ class Game:
         moves = list()
         direction = 1 if pawn.colour else -1
         after_vector = self.add_vectors(source,[2*direction,0])
-        if not pawn.moved and self.is_tile_empty(after_vector):
-            moves.append(after_vector)
+        if (source[0]==6 or source[0] == 1) and self.is_tile_inbounds(after_vector) and self.is_tile_empty(after_vector):
+            moves.append(Move(source, after_vector))
         after_vector = self.add_vectors(source,[direction,0])
         if self.is_tile_empty(after_vector):
-            moves.append(after_vector)
+            moves.append(Move(source, after_vector))
         for tile in [[source[0]+1*direction, source[1]+a] for a in [-1,1]]:
             if not self.is_tile_inbounds(tile): continue
             if self.is_tile_oponent(tile, pawn.colour) or not collision and self.is_tile_own(tile, pawn.colour):
-                moves.append(tile)
+                moves.append(Move(source, tile))
         return moves
 
     def get_horsie_moves(self,horsie:Tile,source:list, collision:bool=True)->list:
@@ -187,7 +217,7 @@ class Game:
             after_vector = self.add_vectors(source,vector)
             if  not self.is_tile_inbounds(after_vector): continue
             if  not collision and self.is_tile_own(after_vector, horsie.colour) or  not self.is_tile_own(after_vector, horsie.colour):
-                moves.append(after_vector)
+                moves.append(Move(source, after_vector))
         return moves
 
     def get_bishop_moves(self,bishop:Tile,source:list, collision:bool=True)->list:
@@ -196,7 +226,7 @@ class Game:
         for diagonal in diagonals:
             for tile in diagonal:
                 if self.is_tile_own(tile, bishop.colour) and collision: break
-                moves.append(tile)
+                moves.append(Move(source, tile))
                 if self.is_tile_oponent(tile, bishop.colour) or self.is_tile_own(tile, bishop.colour): break
         return moves
 
@@ -207,14 +237,14 @@ class Game:
                 tile = self.add_vectors(source, [0,r])
                 if not self.is_tile_inbounds(tile): break
                 if self.is_tile_own(tile, rook.colour) and collision: break
-                moves.append(tile)
+                moves.append(Move(source, tile))
                 if self.is_tile_oponent(tile, rook.colour) or self.is_tile_own(tile, rook.colour) : break
         for x in [-1,1]:
             for r in range(1*x,8*x,x):
                 tile = self.add_vectors(source, [r,0])
                 if not self.is_tile_inbounds(tile): break
                 if self.is_tile_own(tile, rook.colour) and collision: break
-                moves.append(tile)
+                moves.append(Move(source,tile))
                 if self.is_tile_oponent(tile, rook.colour) or self.is_tile_own(tile, rook.colour) : break
         return moves
 
@@ -225,17 +255,13 @@ class Game:
 
     def get_king_moves(self, king:Tile, source:list, depth:bool=True, collision:bool=True)->list:
         moves = list()
-        if depth:
-            opponents_moves = self.get_all_moves(colour=not king.colour, order_by=MovesOrdering.BY_DESTINATION, depth=False, collision=False)
-        else:
-            opponents_moves = []
         for x in [-1,0,1]:
             for y in [-1,0,1]:
                 if x == 0 and y == 0: continue
                 tile = self.add_vectors(source, [x,y])
-                if not self.is_tile_inbounds(tile) or tuple(tile) in opponents_moves.keys(): continue
+                if not self.is_tile_inbounds(tile):  continue
                 if collision and self.is_tile_own(tile, king.colour): continue
-                moves.append(tile)
+                moves.append(Move(source,tile))
         return moves
 
     def move(self,src:list,dest:list):
@@ -243,10 +269,8 @@ class Game:
         tdest = self.at(dest)
         tdest.piece = tsrc.piece
         tdest.colour = tsrc.colour
-        tdest.moved = True
         tsrc.piece = 0
         tsrc.colour = False
-        tsrc.moved = False
         self.check = False
 
     def find_king(self,colour:bool):
@@ -289,10 +313,10 @@ class Game:
     def FENotation(self):
         print('FEN')
         fen = list()
-        for row in reversed(self.rows):
+        for row in reversed(self.tiles):
             rowlist = list()
             empty = 0
-            for i,tile in enumerate(row.tiles):
+            for i,tile in enumerate(row):
                 x = tile.toFEN()
                 if x == '':
                     empty += 1
@@ -301,7 +325,7 @@ class Game:
                         rowlist.append(f'{empty}')
                         empty = 0
                     rowlist.append(x)
-                if i == len(row.tiles) - 1 and empty != 0:
+                if i == len(row) - 1 and empty != 0:
                     rowlist.append(f'{empty}')
             fen.append(''.join(rowlist))
         res = '/'.join(fen)

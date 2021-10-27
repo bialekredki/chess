@@ -6,8 +6,8 @@
         {% set oponent = game.guest%}
     {% endif%}
     {% if oponent == None%}
-    <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs AI.{{game.AI}}</span>
+    <span>{{game.timestamp_creation.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs AI.{{game.AI}}</span>
     {% else%}
-    <span>{{game.timestamp.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
+    <span>{{game.timestamp_creation.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
     {% endif%}
 </li>

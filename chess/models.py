@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from chess import login
 from chess.utils import round_datetime
-from chess.game import Game as ChessGame, PieceType
+from chess.game import Game as ChessGame, PieceType, Tile
 from typing import Union
 
 @login.user_loader
@@ -195,65 +195,25 @@ class Message(ITimeStampedModel):
         self.receiver_seen = True
         db.session.commit()
 
-class Game(ITimeStampedModel, ChessGame):
+class Game(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime(128), index=True, default=datetime.utcnow)
     host_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     guest_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     state = db.Column(db.Integer, index=True, default = 0)
     AI = db.Column(db.String(32))
     host = db.relationship('User', backref='hostgames', lazy='joined', foreign_keys='Game.host_id')
     guest = db.relationship('User', backref='guestgames', lazy='joined', foreign_keys='Game.guest_id')
+    time_limit = db.Column(db.Integer, default=-1)
     is_host_white = db.Column(db.Boolean, default=True)
-    turn = db.Column(db.Boolean, default=True)
-    check = db.Column(db.Boolean, default=False)
+    game_state = db.relationship('GameState', backref='game', lazy=True)
+    show_eval_bar = db.Column(db.Boolean, default=False)
 
-    def __init__(self,host_id,guest_id,is_host_white:bool=True, default_setup:bool=True, AI=None):
-        #ChessGame.__init__(self, is_host_white, False, AI)
-        self.host_id = host_id
-        self.guest_id = guest_id
-        self.AI = AI
-        self.is_host_white = is_host_white
-        for row in range(8):
-            self.rows.append(GameRow(row=row))
-            for col in range(8):
-                self.rows[row].tiles.append(GameTile(column=col))
-                if not default_setup: continue
-                if 6<=row: self.set_colour((row,col), False)
-                elif row < 2: self.set_colour((row,col), True)
-                if row == 7 or row == 0:
-                    self.set_piece((row,col), self.backRowSetup[col])
-                if row == 6 or row == 1:
-                    self.set_piece((row,col), 1)
-
-    def __repr__(self):
-        return f'<Game at={self.timestamp} state={self.state} between {self.host}{self.guest}> {self.all()}'
-
-    def at(self,pos:Union[list,tuple]):
-        return self.rows[pos[0]].get_tile(pos[1])
-    def all(self):
-        l = list()
-        for x in range(8):
-            for y in range(8):
-                l.append(self.at((x,y)))
-        return l
-    def set_colour(self, pos:Union[list,tuple], colour:bool):
-        self.rows[pos[0]].tiles[pos[1]].colour = colour
-    def set_piece(self, pos:Union[list,tuple], piece:int):
-        self.rows[pos[0]].tiles[pos[1]].piece = piece
-    def move(self,src:list,dest:list):
-        ChessGame.move(self, src, dest)
+    def add_new_state(self, state):
+        self.game_state.append(state)
         db.session.commit()
 
-    def find_king(self, colour:bool)->dict:
-        for r,row in enumerate(self.rows):
-            for t,tile in enumerate(row.tiles):
-                if tile.piece == PieceType.KING.value and tile.colour == colour:
-                    return {'xy': (r,t), 'tile': tile} 
-
-    def set_check(self, colour: bool):
-        super().set_check(colour)
-        db.session.commit()
+    def get_current_state(self):
+        return self.game_state[-1]
 
 
 class RecoveryTry(ITimeStampedModel):
@@ -262,55 +222,86 @@ class RecoveryTry(ITimeStampedModel):
     ipaddr = db.Column(db.String(64))
     is_confirmed = db.Column(db.Boolean, default=False)
 
-class GameRow(db.Model):
+class GameState(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    row = db.Column(db.Integer)
-    game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
-    game = db.relationship('Game', backref='rows', lazy='joined', foreign_keys='GameRow.game_id')
+    placement = db.Column(db.String(256), default='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
+    turn = db.Column(db.String(1), default = 'w')
+    move = db.Column(db.Integer, default=1)
+    white_castle_king_side = db.Column(db.Boolean, default=True)
+    white_castle_queen_side = db.Column(db.Boolean, default=True)
+    black_castle_king_side = db.Column(db.Boolean, default=True)
+    black_castle_queen_side = db.Column(db.Boolean, default=True)
+    half_move_clock = db.Column(db.Integer, default=0)
+    game_id = db.Column(db.Integer, db.ForeignKey(Game.id))
+    en_passent = db.Column(db.String(2), default='-')
 
-    def get_tile(self, col:int):
-        return self.tiles[col]
+    def is_white_turn(self)->bool:
+        return True if self.turn == 'w' else False
 
-class GameTile(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    row_id = db.Column(db.Integer, db.ForeignKey('game_row.id'))
-    row = db.relationship('GameRow', backref='tiles', lazy='joined', foreign_keys='GameTile.row_id')
-    piece = db.Column(db.Integer, default=0)
-    colour = db.Column(db.Boolean, default=False)
-    moved = db.Column(db.Boolean, default=False)
-    column = db.Column(db.Integer)
+    def is_black_turn(self)->bool:
+        return True if self.turn == 'b' else False
 
-    def __repr__(self) -> str:
-        return  f'<GameTile {self.id} {self.xy()}{[self.piece,self.colour,self.moved]}>'
+    def toggle_turn(self):
+        self.turn = 'w' if self.turn == 'b' else 'b'
+        db.session.commit()
 
-    def toFEN(self)->str:
-        p = ''
-        if self.piece == 1: p = 'p'
-        elif self.piece == 2: p = 'n'
-        elif self.piece == 3: p = 'b'
-        elif self.piece == 4: p = 'r'
-        elif self.piece == 5: p = 'q'
-        elif self.piece == 6: p = 'k'
-        if self.colour: return p.upper()
-        return p
+    def set(self,fen:str):
+        print('BEFORE SET:', fen)
+        attr = fen.split(' ')
+        for a in attr:
+            print(a)
+        self.placement = attr[0]
+        self.turn = attr[1]
+        self.white_castle_king_side = True if 'K' in attr[2] else False
+        self.white_castle_queen_side = True if 'Q' in attr[2] else False
+        self.black_castle_king_side = True if 'k' in attr[2] else False
+        self.black_castle_queen_side = True if 'q' in attr[2] else False
+        self.en_passent = attr[3]
+        self.half_move_clock = int(attr[4])
+        self.move = int(attr[5])
+        db.session.commit()
+        print('SET:', self.placement)
 
-    def xy(self) -> tuple:
-        return ({self.row.row, self.column})
 
-    def is_empty(self)->bool:
-        return True if self.piece == 0 else False
+    def to_fen(self)->str:
+        result = '' + self.placement + ' ' + self.turn + ' '
+        if self.white_castle_king_side: result += 'K'
+        if self.white_castle_queen_side: result += 'Q'
+        if self.black_castle_king_side: result += 'k'
+        if self.black_castle_queen_side: result += 'q'
+        result += ' ' + self.en_passent + ' ' + str(self.half_move_clock) + ' ' + str(self.move) 
+        return result
+        
+    def to_list(self)->list:
+        result = list()
+        print(self.placement)
+        rows = self.placement.split('/')
+        for r,row in enumerate(reversed(rows)):
+            result.append(list())
+            for c,t in enumerate(row):
+                if t.lower() == 'p':
+                    result[r].append(Tile(1,t.isupper()).jsonify())
+                elif t.lower() == 'n':
+                    result[r].append(Tile(2,t.isupper()).jsonify())
+                elif t.lower() == 'b':
+                    result[r].append(Tile(3,t.isupper()).jsonify())
+                elif t.lower() == 'r':
+                    result[r].append(Tile(4,t.isupper()).jsonify())
+                elif t.lower() == 'q':
+                    result[r].append(Tile(5,t.isupper()).jsonify())
+                elif t.lower() == 'k':
+                    result[r].append(Tile(6,t.isupper()).jsonify())
+                elif t.isnumeric():
+                    for x in range(int(t)):
+                        result[r].append(Tile(0,False).jsonify())
 
-    def is_white(self)->bool:
-        return True if self.colour else False
+        return result
+                    
 
-    def is_black(self)->bool:
-        return True if not self.colour else False
 
-    def is_moved(self)->bool:
-        return True if self.moved else False
 
-    def jsonify(self)->dict:
-        return {'piece':self.piece, 'colour': self.colour, 'moved': self.moved}
+
+
 
 
 

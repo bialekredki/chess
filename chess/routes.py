@@ -7,11 +7,12 @@ from flask_login.utils import login_required
 from sqlalchemy.sql.elements import conv
 from chess import app, db, socketio, mail
 from flask import render_template, redirect, url_for, request
-from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StupidAI, get_ai
+from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StockfishIntegrationAI, StupidAI, get_ai
 from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm
-from chess.game import MovesOrdering
+from chess.game import Move, MovesOrdering, PieceType
 from chess.game_options import GameFormat, GameOption
-from chess.models import BlogPost, BlogPostComment, Message, RecoveryTry, User, Game
+from chess.game import Game as ChessGame
+from chess.models import BlogPost, BlogPostComment, GameState, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
 from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token
@@ -257,7 +258,7 @@ def confirm_email(token):
 def user(username:User):
     user = User.query.filter_by(username=username).first_or_404()
     posts = BlogPost.query.filter_by(author=user)
-    games = Game.query.filter(or_(Game.host==user, Game.guest==user)).order_by(Game.timestamp.desc()).limit(10).all()
+    games = Game.query.filter(or_(Game.host==user, Game.guest==user)).order_by(Game.timestamp_creation.desc()).limit(10).all()
     time_since = round_datetime(datetime.utcnow() - user.get_creation_date())
     return render_template('user.html', user=user, posts=posts, time_since=time_since,games=games)
 
@@ -356,8 +357,12 @@ def create_game(guest_id:int=None,type:int=0):
     app.logger.error("%s [GAME] starts a new game with %s", current_user.username, request.form)
     if request.form.get('AI'):
         guest_id = -1
-        g = Game(current_user.id, guest_id, AI='Stupid')
+        if request.form.get('bar',False) == 'true': bar = True
+        else: bar = False
+        g = Game(host_id=current_user.id, guest_id=guest_id, AI=request.form.get('AI'), show_eval_bar=bar)
+        g.game_state.append(GameState())
         db.session.add(g)
+        print(g)
         db.session.commit()
         return url_for(f'game', id=g.id)
     if request.form.get('Friends') is not None:
@@ -382,20 +387,39 @@ def create_game_invitation(token):
         return redirect(url_for('index'))
 
     if guest_id != current_user.id: return redirect(url_for('index'))
-    game:Game = Game(host_id,guest_id)
+    game:Game = Game(host_id=host_id,guest_id=guest_id)
+    gs = GameState()
+    db.session.add(gs)
     db.session.add(game)
+    game.game_state.append(gs)
     db.session.commit()
     socketio.emit('game_ready', {'url': url_for('game', id=game.id)} , namepsace=f'/messages-{host_id}')
     return redirect(url_for('game', id=game.id))
 
+@app.route('/api/game/history', methods=['GET'])
+@login_required
+def api_game_history():
+    game:Game = Game.query.filter_by(id=request.args.get['id']).first_or_404()
+    if request.args.get('all'): return ('', 200)
+    return 
+
 @socketio.on('getgame')
 def set_game(js,methods='GET'):
     game:Game = Game.query.filter_by(id=js['id']).first()
-    tiles = list()
-    for r,row in enumerate(game.rows):
-        tiles.append([tile.jsonify() for tile in row.tiles])
-    print(tiles)
-    socketio.emit('setgame',{'tiles':tiles})
+    print(game.game_state[-1].to_list())
+    print(game.game_state[-1].to_fen())
+    if game.show_eval_bar:
+        eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
+        eval = eval['value']
+        print(eval)
+        if eval < -2000: eval = -2000
+        if eval > 2000: eval = 2000
+        print(eval)
+        eval = ((eval + 2000)/(4000))*100
+        print(eval)
+        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
+    else:
+        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
 
 @socketio.on('getcolour')
 def set_colour(js,methods='GET'):
@@ -408,54 +432,83 @@ def set_colour(js,methods='GET'):
 def get_possible_moves(js, methods=['GET']):
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
-    if not game.compare_with_js(js['game']['tiles']):
-        app.logger.info("Comparison failed")
-        return  
+    print(game.get_current_state().to_fen())
+    chess_game = ChessGame(game.game_state[-1].to_list(), game.game_state[-1].to_fen())
     if current_user.id != game.host_id and current_user.id != game.guest_id:
         return #TODO: Handle discrepancies on server-client
-    socketio.emit('setpossiblemoves', {'moves': game.get_moves(js['from']), 'to':current_user.id})
+    print([move.jsonify()['to'] for move in chess_game.get_moves(js['from'])])
+    socketio.emit('setpossiblemoves', {'moves': [move.jsonify()['to'] for move in chess_game.get_moves(js['from'])], 'to':current_user.id}, namespace=f'/game-{game.id}')
+    
 
 @socketio.on('confirmmove')
 def confirm_move(js, methods='GET'):
     app.logger.info("Move request\n%s", str(js))
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
-    game.FENotation()
-    print('FUCKING TURN', game.turn)
-    if not game.compare_with_js(js['game']['tiles']):
-        app.logger.info("Comparison failed")
-        return
+    current_state = game.get_current_state()
+    print(current_state.to_fen())
     if not current_user.is_in_game(game):
         app.logger.info("%s submitted a move without permission[guest]", current_user.username)
         return
-    if current_user.plays_as_white(game) and not game.at(js['from']).colour:
-        app.logger.info("%s submitted a move without permission[black]", current_user.username)
-        return
-    if current_user.plays_as_black(game) and game.at(js['from']).colour:
-        app.logger.info("%s submitted a move without permission[white]", current_user.username)
-        return
-    if current_user.plays_as_black(game) and game.turn:
+    if current_user.plays_as_black(game) and current_state.is_white_turn():
         app.logger.info("%s submitted a move outside his turn[white]", current_user.username)
         return
-    if current_user.plays_as_white(game) and not game.turn:
+    if current_user.plays_as_white(game) and current_state.is_black_turn():
         app.logger.info("%s submitted a move outside his turn[black]", current_user.username)
         return
-    possible_moves = game.get_all_moves(order_by=MovesOrdering.BY_SOURCE)
-    if tuple(js['from']) not in possible_moves.keys() or js['to'] not in possible_moves[tuple(js['from'])]:
+    sf = StockfishIntegrationAI(current_state.to_fen())
+    print(current_state.to_fen())
+    print(sf.engine.get_board_visual())
+    move = Move(js['from'], js['to'])
+    move = move.algebraic()
+    cg = ChessGame(current_state.to_list(), current_state.to_fen())
+    if js['to'][0] == 7 and cg.at(js['from']).piece == PieceType.PAWN.value and cg.at(js['from']).colour or js['to'][0] == 0 and cg.at(js['from']).piece == PieceType.PAWN.value and not cg.at(js['from']).colour:
+        move += 'Q'
+    if not sf.is_possible(move):
         app.logger.info('%s submitted impossible move', current_user.username)
         return
-    game.move(js['from'], js['to'])
-    game.turn = not game.turn
-    game.set_check(game.turn)
-    print('Turn on players mOVE', game.turn)
-    socketio.emit('move', {'from': js['from'], 'to': js['to']}, broadcast=True)
-    if game.AI is not None and current_user.plays_as_white(game) != game.turn:
-        possible_moves = game.get_all_moves(colour=not game.at(js['to']).colour)
-        move = get_ai(game.AI).make_stupid_move(possible_moves)
-        game.move(move[0], move[1])
-        game.turn = not game.turn
-        print('Turn on AI mOVE', game.turn)
-        socketio.emit('move', {'from': move[0], 'to': move[1]}, broadcast=True)
+    print(sf.engine.get_board_visual())
+    fen = sf.move(move)
+    print(sf.engine.get_board_visual())
+    new_state = GameState()
+    game.game_state.append(new_state)
+    new_state.set(fen)
+    print('MOVE PLAYER', new_state.to_fen())
+    if game.AI is not None and ((current_user.plays_as_white(game) and new_state.is_black_turn()) or (current_user.plays_as_black(game) and new_state.is_white_turn())):
+        ai = get_ai(game.AI, new_state.to_fen())
+        move = ai.best_move()
+        fen = ai.move(move)
+        new_state = GameState()
+        new_state.set(fen)
+        game.game_state.append(new_state)
+        print(new_state.to_fen())
+        move = Move.from_algebraic(move)
+        if game.show_eval_bar:
+            eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
+            eval = eval['value']
+            print(eval)
+            if eval < -2000: eval = -2000
+            if eval > 2000: eval = 2000
+            print(eval)
+            eval = ((eval + 2000)/(4000))*100
+            print(eval)
+            socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
+        else:
+            socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
+            print('Second')
+    else:
+            if game.show_eval_bar:
+                eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
+                eval = eval['value']
+                print(eval)
+                if eval < -2000: eval = -2000
+                if eval > 2000: eval = 2000
+                print(eval)
+                eval = ((eval + 2000)/(4000))*100
+                print(eval)
+                socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
+            else:
+                socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
     db.session.commit()
     
     
