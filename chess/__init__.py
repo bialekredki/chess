@@ -7,6 +7,7 @@ from flask_bootstrap import Bootstrap
 from flask_socketio import SocketIO
 from flask_mail import Mail
 from logging.config import dictConfig
+from celery import Celery
 
 dictConfig({
     'version': 1,
@@ -39,6 +40,11 @@ app.config['MAIL_PORT']=465
 app.config['MAIL_USERNAME'] = os.environ['APP_MAIL_USERNAME']
 app.config['MAIL_PASSWORD'] = os.environ['APP_MAIL_PASSWORD']
 app.config['MAIL_DEFAULT_SENDER'] = 'oskarkorgul@gmail.com'
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 db = SQLAlchemy(app)
 migrate = Migrate(app,db, render_as_batch=True)
 login = LoginManager(app)

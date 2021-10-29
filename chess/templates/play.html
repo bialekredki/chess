@@ -23,7 +23,7 @@
             payload['time'] = true;
         }
         else{
-            payload['options'] = ['ranked', 'max_rank', 'min_rank'];
+            payload['options'] = ['ranked',  'min_rank', 'max_rank'];
             payload['time'] = true;
         }
 
@@ -32,7 +32,7 @@
             e.stopPropagation();
             parent.removeClass('btn');
             parent.removeClass('btn-info');
-            parent.append('<div></div>')
+            parent.append("<div class='row'></div>")
             parent.append("<li class='list-group-item list-group-item-success btn'>Play</li>")
             parent.append("<li class='list-group-item list-group-item-danger btn'>Cancel</li>")
             let namespace = '';
@@ -42,7 +42,7 @@
             Object.entries(data).forEach((item, index, array) =>{
                 console.log(item);
                 let width = 100 / array.length - 1;
-                $(`#${namespace}-item-1>div`).append(`<div style='width:${width}%; display:inline-block;'><ul class='list-group scrollable'  style='height:inherit;' id='${namespace}-item-${index+2}' > 
+                $(`#${namespace}-item-1>div`).append(`<div style='width:${width}%; display:inline-block;' class='col-md-4'><ul class='list-group scrollable'  style='height:inherit;' id='${namespace}-item-${index+2}' > 
                     <li class='list-group-item ' style='background-color:#c3c6c9;'>${item[0]}</li>
                     </ul></div>`)
                 let list = $(`#${namespace}-item-${index+2}`);

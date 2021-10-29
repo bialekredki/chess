@@ -68,6 +68,7 @@ class User(UserMixin, ITimeStampedModel):
                     secondary=liked_table,
                     lazy='dynamic',
                     backref=db.backref('liked_by', lazy='dynamic'))
+    mm_request = db.relationship("MatchmakerRequest", back_populates="user", uselist=False)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -296,6 +297,24 @@ class GameState(db.Model):
                         result[r].append(Tile(0,False).jsonify())
 
         return result
+
+class MatchmakerRequest(ITimeStampedModel):
+    id = db.Column(db.Integer, primary_key=True)
+    ranked = db.Column(db.Boolean)
+    min_rank = db.Column(db.Integer)
+    max_rank = db.Column(db.Integer)
+    time = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', back_populates='mm_request')
+
+    def __eq__(self,mmrequest):
+        return True if self.user_id == mmrequest.user_id else False
+
+    def fulfills_conditions(self,mmrequest):
+        user = mmrequest.user
+        if self.min_rank <= user.elo <= self.max_rank and mmrequest.min_rank <= self.user.elo <= mmrequest.max_rank and self.ranked == mmrequest.ranked:
+            return True
+        return False
                     
 
 

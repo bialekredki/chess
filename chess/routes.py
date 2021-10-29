@@ -5,14 +5,14 @@ from flask.helpers import flash
 from flask.json import jsonify
 from flask_login.utils import login_required
 from sqlalchemy.sql.elements import conv
-from chess import app, db, socketio, mail
+from chess import app, db, socketio, mail, celery
 from flask import render_template, redirect, url_for, request
 from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StockfishIntegrationAI, StupidAI, get_ai
 from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm
 from chess.game import Move, MovesOrdering, PieceType
 from chess.game_options import GameFormat, GameOption
 from chess.game import Game as ChessGame
-from chess.models import BlogPost, BlogPostComment, GameState, Message, RecoveryTry, User, Game
+from chess.models import BlogPost, BlogPostComment, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
 from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token
@@ -376,6 +376,21 @@ def create_game(guest_id:int=None,type:int=0):
         return ('', 200)
     if guest_id is None: return ('', 200)
 
+@app.route('/play/matchmaker/<id>', methods=['GET','POST'])
+@login_required
+def play_matchmaker(id):
+    user:User = User.query.filter_by(id=id).first_or_404()
+    if user.mm_request is None:
+        user.mm_request = MatchmakerRequest()
+        db.session.add(user.mm_request)
+        db.session.commit()
+    while True:
+        requests = MatchmakerRequest.query.all()
+        for request in requests:
+            print(request)
+            print(user.mm_request.fulfills_conditions(request))
+    return ('', 200)
+
 
 @app.route('/play/new/<token>', methods=['GET','POST'])
 @login_required
@@ -396,7 +411,7 @@ def create_game_invitation(token):
     socketio.emit('game_ready', {'url': url_for('game', id=game.id)} , namepsace=f'/messages-{host_id}')
     return redirect(url_for('game', id=game.id))
 
-@app.route('/api/game/history', methods=['GET'])
+@app.route('/api/game/history/<id>', methods=['GET'])
 @login_required
 def api_game_history():
     game:Game = Game.query.filter_by(id=request.args.get['id']).first_or_404()
