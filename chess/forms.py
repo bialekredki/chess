@@ -1,7 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, BooleanField, PasswordField, SubmitField
+from wtforms import StringField, BooleanField, PasswordField, SubmitField, RadioField
+from wtforms.fields.core import SelectField
 from wtforms.validators import DataRequired, EqualTo, Email, ValidationError
-from chess.models import User
+from wtforms.widgets.core import Select
+from chess.models import User, ChessBoardTheme
 
 
 class LoginForm(FlaskForm):
@@ -34,3 +36,11 @@ class ForgotPasswordForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is None:
             raise ValidationError('There\' no account associated with this email')
+
+class SettingsForm(FlaskForm):
+    is_private = RadioField('Account visibility', choices=[('public','Public'), ('private','Private')], validators=[DataRequired()])
+    new_password = PasswordField('New password')
+    confirm_new_password = PasswordField('Confirm new password')
+    name = StringField('Your name')
+    chess_theme = SelectField('Theme', choices=[(x.name,x.name) for x in ChessBoardTheme.query.all()])
+    submit = SubmitField('Accept changes')

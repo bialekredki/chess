@@ -1,0 +1,57 @@
+{% extends 'main.html' %}
+{%import 'bootstrap/wtf.html' as wtf%}
+
+{%block scripts%}
+    {{super()}}
+    <script>
+    {%if user.username == current_user.username%}
+    
+        submit_img = (e) => {
+            console.log('Submit img')
+            console.log(e.files[0])
+            let f = e.files[0];
+            let formData = new FormData();
+            formData.append('user_id', {{current_user.id}})
+            formData.append('image', f)
+            $.ajax({
+                type:"POST",
+                url:"/submit_image",
+                async:true,
+                processData: false,
+                contentType: false,
+                data:formData,
+                timeout: 6000
+            }).done(()=>{location.reload()})
+        }
+        $('#user_avatar').on('click', () => {
+            $('#img-file-input').trigger('click');
+            console.log('Img field clicked')
+        });
+
+        $('#user_avatar').addClass('editable')
+    
+    {%endif%}
+        {%if not current_user.is_anonymous and current_user.username != user.username%}
+            submit_friend_request = () => {
+                $.post('/me/add_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"}).done(()=>{location.reload()})
+            }
+            submit_unfriend_request = () => {
+                $.post('/me/remove_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"}).done(()=>{location.reload()})
+            }
+            invite_to_play = () => {
+                window.href = "{{url_for('create_game')}}";
+            }
+        {%endif%}
+    </script>
+{%endblock%}
+
+{%block leftside%}
+    {% set subpage = 'settings'%}
+    {%include 'user/user_panel.html'%}
+{%endblock%}
+
+{%block sitecontent%}
+
+    {{wtf.quick_form(form)}}
+
+{%endblock%}

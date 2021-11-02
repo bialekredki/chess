@@ -39,3 +39,15 @@ def confirm_game_invitation_token(token, expiration=240):
     except:
         return False
     return host_id, guest_id
+
+def generate_matchmaking_token(user_id:int, options:dict):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps((user_id, options), salt=app.config['SECURITY_PASSWORD_SALT'])
+
+def resolve_matchmaking_token(token):
+    serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    try:
+        user_id, options = serializer.loads(token,salt=app.config['SECURITY_PASSWORD_SALT'])
+    except:
+        return False
+    return user_id, options

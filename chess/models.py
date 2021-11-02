@@ -69,6 +69,7 @@ class User(UserMixin, ITimeStampedModel):
                     lazy='dynamic',
                     backref=db.backref('liked_by', lazy='dynamic'))
     mm_request = db.relationship("MatchmakerRequest", back_populates="user", uselist=False)
+    theme = db.Column(db.String(32), default='Classic')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -312,9 +313,24 @@ class MatchmakerRequest(ITimeStampedModel):
 
     def fulfills_conditions(self,mmrequest):
         user = mmrequest.user
+        print(user)
         if self.min_rank <= user.elo <= self.max_rank and mmrequest.min_rank <= self.user.elo <= mmrequest.max_rank and self.ranked == mmrequest.ranked:
             return True
         return False
+
+    def jsonify(self):
+        return {'id': self.id, 'ranked': self.ranked, 'min_rank': self.min_rank, 'max_rank': self.max_rank, 'time': self.time, 'user_id':self.user_id}
+
+    @classmethod
+    def from_json(self, obj:dict):
+        return MatchmakerRequest.query.filter_by(id=obj.get('id')).first()
+
+
+class ChessBoardTheme(db.Model):
+    name = db.Column(db.String(32), primary_key=True)
+    piece_set = db.Column(db.String(32))
+    black_tile_colour = db.Column(db.Integer)
+    white_tile_colour = db.Column(db.Integer)
                     
 
 

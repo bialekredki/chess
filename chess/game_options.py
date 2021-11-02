@@ -36,3 +36,8 @@ class GameFormat(enum.Enum):
     def all(self):
         return [f.value for f in GameFormat]
 
+    @classmethod
+    def by_id(self,id:str):
+        for f in GameFormat:
+            if id == f.value.get('id'): return f
+

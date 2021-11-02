@@ -40,10 +40,8 @@ app.config['MAIL_PORT']=465
 app.config['MAIL_USERNAME'] = os.environ['APP_MAIL_USERNAME']
 app.config['MAIL_PASSWORD'] = os.environ['APP_MAIL_PASSWORD']
 app.config['MAIL_DEFAULT_SENDER'] = 'oskarkorgul@gmail.com'
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 
-celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery = Celery(app.name, backend='rpc://')
 celery.conf.update(app.config)
 db = SQLAlchemy(app)
 migrate = Migrate(app,db, render_as_batch=True)
@@ -52,8 +50,9 @@ login.login_view = 'login'
 bootstrap = Bootstrap(app)
 socketio = SocketIO(app)
 mail = Mail(app)
-
+x = None
 if __name__ == '__main__':
     socketio.run(app, debug=True)
 
-from chess import routes, models
+from chess import routes, models, real_time_routes
+from chess.background import game_tick

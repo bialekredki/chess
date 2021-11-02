@@ -1,21 +1,23 @@
 from datetime import datetime
 from re import S
 import re
+from typing import Union
 from flask.helpers import flash
 from flask.json import jsonify
+from flask.wrappers import Response
 from flask_login.utils import login_required
 from sqlalchemy.sql.elements import conv
 from chess import app, db, socketio, mail, celery
 from flask import render_template, redirect, url_for, request
 from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StockfishIntegrationAI, StupidAI, get_ai
-from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm
+from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm, SettingsForm
 from chess.game import Move, MovesOrdering, PieceType
 from chess.game_options import GameFormat, GameOption
 from chess.game import Game as ChessGame
 from chess.models import BlogPost, BlogPostComment, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
-from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token
+from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_matchmaking_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token, resolve_matchmaking_token
 from chess.utils import round_datetime
 from sqlalchemy import or_
 from flask_socketio import SocketIO,send,emit
@@ -24,17 +26,20 @@ import json
 from fuzzywuzzy import fuzz
 import os.path
 from chess.mail import send_mail
+from chess.background import game_tick, on_raw_message, matchmaker_task
 
 
 
 @app.route('/logout')
-def logout():
+def logout()->Response:
+    """Route. Logs user out and redirects them to the home page."""
     logout_user()
     return redirect(url_for('index'))
 
 @app.route('/')
 @app.route('/index')
-def index():
+def index()->Response:
+    """Route. Renders HTML response of index.html file."""
     return render_template('index.html', title='Home')
 
 @app.route('/search_user', methods=['GET', 'POST'])
@@ -60,7 +65,10 @@ def search_user():
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login()->Union[Response,str]:
+    """Route. Creates a form for singing in.
+        Creates a form a form for singing in and checks the form on submission. If form is correct then user is logged in and redirect for the homepage.
+    """
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
@@ -267,6 +275,17 @@ def user(username:User):
 def user_games(username:User):
     pass
 
+@app.route('/me/<username>/settings', methods=['GET','POST'])
+@login_required
+def user_settings(username):
+    if current_user.username != username: return redirect(url_for('index'))
+    form = SettingsForm()
+    if form.validate_on_submit():
+        if form.new_password != form.confirm_new_password:
+            flash('Passwords are different')
+            
+    return render_template('user/user_settings.html', form=form, user=current_user)
+
 @app.route('/me/add_friend', methods=['GET', 'POST'])
 @login_required
 def add_friend():
@@ -354,7 +373,7 @@ def message_handler(data):
 @app.route('/play/new', methods=['POST'])
 @login_required
 def create_game(guest_id:int=None,type:int=0):
-    app.logger.error("%s [GAME] starts a new game with %s", current_user.username, request.form)
+    app.logger.info("%s [GAME] starts a new game with %s", current_user.username, request.form)
     if request.form.get('AI'):
         guest_id = -1
         if request.form.get('bar',False) == 'true': bar = True
@@ -374,22 +393,41 @@ def create_game(guest_id:int=None,type:int=0):
         db.session.add(message)
         db.session.commit()
         return ('', 200)
-    if guest_id is None: return ('', 200)
+    if guest_id is None: return play_matchmaker(generate_matchmaking_token(current_user.id, {
+            'time': GameFormat.by_id(request.form.get('Time Control')).value.get('time'), 
+            'max_rank': request.form.get('max_rank'),
+            'min_rank': request.form.get('min_rank'),
+            'ranked': bool(request.form.get('ranked'))
+            }))
 
-@app.route('/play/matchmaker/<id>', methods=['GET','POST'])
+@app.route('/play/matchmaker/<token>', methods=['GET','POST'])
 @login_required
-def play_matchmaker(id):
+def play_matchmaker(token):
+    id, options = resolve_matchmaking_token(token)
+    print(id)
+    print(options)
     user:User = User.query.filter_by(id=id).first_or_404()
     if user.mm_request is None:
-        user.mm_request = MatchmakerRequest()
+        user.mm_request = MatchmakerRequest(
+            ranked=options.get('ranked'),
+            max_rank = options.get('max_rank'),
+            min_rank = options.get('min_rank'),
+            time = options.get('time')
+        )
         db.session.add(user.mm_request)
         db.session.commit()
     while True:
-        requests = MatchmakerRequest.query.all()
-        for request in requests:
-            print(request)
-            print(user.mm_request.fulfills_conditions(request))
-    return ('', 200)
+        task = matchmaker_task.delay(user.mm_request.jsonify(), [x.jsonify() for x in MatchmakerRequest.query.all()])
+        result = task.wait()
+        if result in [x.jsonify() for x in MatchmakerRequest.query.all()]: break
+    db.session.delete(user.mm_request)
+    db.session.delete(MatchmakerRequest.from_json(result))
+    db.session.commit()
+    game:Game = Game(host_id=current_user.id,guest_id=result.get('user_id'))
+    game.game_state.append(GameState())
+    db.session.add(game)
+    db.session.commit()
+    return url_for('game',  id=game.id)
 
 
 @app.route('/play/new/<token>', methods=['GET','POST'])
@@ -418,112 +456,3 @@ def api_game_history():
     if request.args.get('all'): return ('', 200)
     return 
 
-@socketio.on('getgame')
-def set_game(js,methods='GET'):
-    game:Game = Game.query.filter_by(id=js['id']).first()
-    print(game.game_state[-1].to_list())
-    print(game.game_state[-1].to_fen())
-    if game.show_eval_bar:
-        eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-        eval = eval['value']
-        print(eval)
-        if eval < -2000: eval = -2000
-        if eval > 2000: eval = 2000
-        print(eval)
-        eval = ((eval + 2000)/(4000))*100
-        print(eval)
-        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
-    else:
-        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
-
-@socketio.on('getcolour')
-def set_colour(js,methods='GET'):
-    game:Game = Game.query.filter_by(id=js['id']).first()
-    user:User = User.query.filter_by(id=js['player_id']).first()
-    if not user.is_in_game(game): return
-    socketio.emit('setcolour',{'colour':user.plays_as_white(game)})
-
-@socketio.on('getpossiblemoves')
-def get_possible_moves(js, methods=['GET']):
-    id = js['gameid']
-    game:Game = Game.query.filter_by(id=id).first()
-    print(game.get_current_state().to_fen())
-    chess_game = ChessGame(game.game_state[-1].to_list(), game.game_state[-1].to_fen())
-    if current_user.id != game.host_id and current_user.id != game.guest_id:
-        return #TODO: Handle discrepancies on server-client
-    print([move.jsonify()['to'] for move in chess_game.get_moves(js['from'])])
-    socketio.emit('setpossiblemoves', {'moves': [move.jsonify()['to'] for move in chess_game.get_moves(js['from'])], 'to':current_user.id}, namespace=f'/game-{game.id}')
-    
-
-@socketio.on('confirmmove')
-def confirm_move(js, methods='GET'):
-    app.logger.info("Move request\n%s", str(js))
-    id = js['gameid']
-    game:Game = Game.query.filter_by(id=id).first()
-    current_state = game.get_current_state()
-    print(current_state.to_fen())
-    if not current_user.is_in_game(game):
-        app.logger.info("%s submitted a move without permission[guest]", current_user.username)
-        return
-    if current_user.plays_as_black(game) and current_state.is_white_turn():
-        app.logger.info("%s submitted a move outside his turn[white]", current_user.username)
-        return
-    if current_user.plays_as_white(game) and current_state.is_black_turn():
-        app.logger.info("%s submitted a move outside his turn[black]", current_user.username)
-        return
-    sf = StockfishIntegrationAI(current_state.to_fen())
-    print(current_state.to_fen())
-    print(sf.engine.get_board_visual())
-    move = Move(js['from'], js['to'])
-    move = move.algebraic()
-    cg = ChessGame(current_state.to_list(), current_state.to_fen())
-    if js['to'][0] == 7 and cg.at(js['from']).piece == PieceType.PAWN.value and cg.at(js['from']).colour or js['to'][0] == 0 and cg.at(js['from']).piece == PieceType.PAWN.value and not cg.at(js['from']).colour:
-        move += 'Q'
-    if not sf.is_possible(move):
-        app.logger.info('%s submitted impossible move', current_user.username)
-        return
-    print(sf.engine.get_board_visual())
-    fen = sf.move(move)
-    print(sf.engine.get_board_visual())
-    new_state = GameState()
-    game.game_state.append(new_state)
-    new_state.set(fen)
-    print('MOVE PLAYER', new_state.to_fen())
-    if game.AI is not None and ((current_user.plays_as_white(game) and new_state.is_black_turn()) or (current_user.plays_as_black(game) and new_state.is_white_turn())):
-        ai = get_ai(game.AI, new_state.to_fen())
-        move = ai.best_move()
-        fen = ai.move(move)
-        new_state = GameState()
-        new_state.set(fen)
-        game.game_state.append(new_state)
-        print(new_state.to_fen())
-        move = Move.from_algebraic(move)
-        if game.show_eval_bar:
-            eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-            eval = eval['value']
-            print(eval)
-            if eval < -2000: eval = -2000
-            if eval > 2000: eval = 2000
-            print(eval)
-            eval = ((eval + 2000)/(4000))*100
-            print(eval)
-            socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
-        else:
-            socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
-            print('Second')
-    else:
-            if game.show_eval_bar:
-                eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-                eval = eval['value']
-                print(eval)
-                if eval < -2000: eval = -2000
-                if eval > 2000: eval = 2000
-                print(eval)
-                eval = ((eval + 2000)/(4000))*100
-                print(eval)
-                socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
-            else:
-                socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
-    db.session.commit()
-    
-    

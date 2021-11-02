@@ -79,10 +79,6 @@
     color: rgb(138, 216, 210);
 }
 
-#root {
-    border: solid 1px black;
-}
-
 .scrollable {
     height: 100%;
     overflow: hidden;
@@ -148,4 +144,26 @@
 
 .progress-bar {
     box-shadow: inset 0px 4px 6px rgba(100, 100, 100, 0.6);
+}
+
+.user-panel-btn {
+    width: 100%;
+    text-align: left;
+    transition: all 1s linear;
+}
+
+.user-panel-btn.active {
+    text-align: right;
+    color: white;
+    background-color: black;
+}
+
+.user-panel-btn:hover {
+    text-align: right;
+    color: white;
+    background-color: black;
+}
+
+.user-panel-btn>.glyphicon {
+    margin-right: 5px;
 }

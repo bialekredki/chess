@@ -18,14 +18,23 @@ class Tile:
     def is_empty(self)->bool:
         return True if self.piece == 0 else False
 
+    @classmethod
+    def algerbraic_to_xy(self, algebraic:str)->Union[list,tuple]:
+        if type(algebraic) is not str or len(algebraic) != 2: raise ValueError(f"[{self} {__name__}] Incorrect algebraic {algebraic} coordinate to be converted into xy coordinates.")
+        return (int(algebraic[1])-1,  ord(algebraic[0]) - ord('a'))
+
+    @classmethod
+    def xy_eq(self, position_1:Union[list,tuple], position_2:Union[list,tuple]):
+        return True if position_1[0] == position_2[0] and position_1[1] == position_2[1] else False
+
 def move_list_to_algebraic(move):
     return chr(move[0][0] + ord('a')) + str(move[0][1]+1) + chr(move[1][0] + ord('a')) + str(move[1][1]+1)
 
 
 class MovesOrdering(enum.Enum):
-        BY_NONE = 0
-        BY_SOURCE = 1
-        BY_DESTINATION = 2
+    BY_NONE = 0
+    BY_SOURCE = 1
+    BY_DESTINATION = 2
 
 class PieceType(enum.Enum):
     NONE = 0
@@ -75,7 +84,7 @@ class Game:
     def add_vectors(self,t:list,v:list)->list:
         return [t[0]+v[0], t[1]+v[1]]
 
-    def get_moves(self,source:list, collision:bool=True)->list:
+    def get_moves(self,source:list, collision:bool=True)->'list[Move]':
         if self.is_tile_empty(source): return []
         tile = self.at(source)
         if tile.piece == 1: return self.get_pawn_moves(tile, source, collision=collision)
@@ -90,32 +99,6 @@ class Game:
             moves = list()
         else:
             moves = dict()
-        ryba = StockfishIntegrationAI(self.FEN)
-
-        """if self.check and self.turn == colour:
-            print('Check detected for ', colour)
-            king = self.find_king(colour)
-            king_xy = king['xy']
-            king = king['tile']
-            print('King on ', king_xy, ' ', king)
-            print('King can run to', self.get_king_moves(king, king_xy))
-            for move in self.get_king_moves(king, king_xy):
-                print((king_xy, move))
-                moves.append((king_xy, move))
-            self.check = False
-            mo = self.get_all_moves(colour=not colour, order_by=MovesOrdering.BY_DESTINATION)
-            m = self.get_all_moves(colour=colour, order_by=MovesOrdering.BY_DESTINATION)
-            self.check = True
-            print('King is endangered by ',mo.get(king_xy))
-            print('Danger can be neutralised by', [m.get(tuple(x)) for x in mo.get(tuple(king_xy))])
-            for opo in mo.get(tuple(king_xy)):
-                if tuple(opo) not in m: continue
-                for my in m.get(tuple(opo)):
-                    print((my, opo))
-                    moves.append((my, opo))
-            return moves"""
-            
-
         for r,row in enumerate(self.tiles):
             for c,tile in enumerate(row):
                 if  tile.is_empty() or colour is not None and tile.colour != colour: continue
@@ -129,13 +112,10 @@ class Game:
                     if order_by == MovesOrdering.BY_NONE:
                         moves.append(move)
                     if order_by == MovesOrdering.BY_DESTINATION:
-                        key = tuple(move)
+                        key = tuple(move.dest)
                         if moves.get(key) is None:
                             moves[key] = list()
                         moves[key].append([r,c])
-        
-        for move in moves:
-            print(f'{move.algebraic()} {ryba.is_possible(move.algebraic())}')
         return moves
 
     def row(self,r:int,start:int=0,step:int=1)->list:
@@ -179,6 +159,16 @@ class Game:
             tiles.append(tile)
         return tiles
 
+
+    def is_en_passant_possible(self):
+        return False if self.FEN.split(' ')[3] is None or self.FEN.split(' ')[3] == '-' else True
+
+    def get_en_passant(self):
+        return self.FEN.split(' ')[3]
+
+    def en_passant(self):
+        if not self.is_en_passant_possible(): return None
+        return Tile.algerbraic_to_xy(self.get_en_passant())
                 
 
     def compare_with_js(self,js:list)->bool:
@@ -195,6 +185,7 @@ class Game:
         moves = list()
         direction = 1 if pawn.colour else -1
         after_vector = self.add_vectors(source,[2*direction,0])
+        en_passant = self.en_passant()
         if (source[0]==6 or source[0] == 1) and self.is_tile_inbounds(after_vector) and self.is_tile_empty(after_vector):
             moves.append(Move(source, after_vector))
         after_vector = self.add_vectors(source,[direction,0])
@@ -202,7 +193,7 @@ class Game:
             moves.append(Move(source, after_vector))
         for tile in [[source[0]+1*direction, source[1]+a] for a in [-1,1]]:
             if not self.is_tile_inbounds(tile): continue
-            if self.is_tile_oponent(tile, pawn.colour) or not collision and self.is_tile_own(tile, pawn.colour):
+            if self.is_tile_oponent(tile, pawn.colour) or not collision and self.is_tile_own(tile, pawn.colour) or en_passant is not None and Tile.xy_eq(en_passant, tile):
                 moves.append(Move(source, tile))
         return moves
 
@@ -262,6 +253,9 @@ class Game:
                 if not self.is_tile_inbounds(tile):  continue
                 if collision and self.is_tile_own(tile, king.colour): continue
                 moves.append(Move(source,tile))
+        castling = self.check_for_castling(king.colour)
+        if castling[0]: moves.append(Move(source, (source[0], 6)))
+        if castling[1]: moves.append(Move(source, (source[0], 1)))
         return moves
 
     def move(self,src:list,dest:list):
@@ -287,27 +281,21 @@ class Game:
         return [self.check_for_castling_ks(colour), self.check_for_castling_qs(colour)]
 
     def check_for_castling_qs(self, colour:bool)->bool:
-        if colour:
-            pos = {'king':(0,4), 'rook':(0,0)}
-        else:
-            pos = {'king':(7,4), 'rook':(7,0)}
-        rook = self.at(pos['rook'])
-        king = self.at(pos['king'])
-        if king.piece != PieceType.KING.value or rook.piece != PieceType.ROOK.value: return False
-        if king.colour != colour or rook.colour != colour: return False
-        if king.moved or rook.moved: return False
+        fen_castling = self.FEN.split(' ')[2]
+        row = 0 if colour else 7
+        if colour and 'Q' not in fen_castling or not colour and 'q' not in fen_castling: return False
+        possible_moves = self.get_all_moves(not colour, MovesOrdering.BY_DESTINATION, depth=False)
+        for col in [1,2,3]:
+            if not self.is_tile_empty([row, col]) or (row,col)  in possible_moves.keys():   return False
         return True
 
     def check_for_castling_ks(self, colour:bool)->bool:
-        if colour:
-            pos = {'king':(0,4), 'rook':(0,7)}
-        else:
-            pos = {'king':(7,4), 'rook':(7,7)}
-        rook = self.at(pos['rook'])
-        king = self.at(pos['king'])
-        if king.piece != PieceType.KING.value or rook.piece != PieceType.ROOK.value: return False
-        if king.colour != colour or rook.colour != colour: return False
-        if king.moved or rook.moved: return False
+        fen_castling = self.FEN.split(' ')[2]
+        row = 0 if colour else 7
+        if colour and 'K' not in fen_castling or not colour and 'k' not in fen_castling: return False
+        possible_moves = self.get_all_moves(not colour, MovesOrdering.BY_DESTINATION, depth=False)
+        for col in [5,6]:
+            if not self.is_tile_empty([row, col]) or (row,col)  in possible_moves.keys():   return False
         return True
 
     def FENotation(self):

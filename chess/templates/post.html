@@ -45,7 +45,7 @@
         <p class="card-text">Upvotes:{{post.upvotes}}</p>
         </div>
         <div class="panel-body">
-            {{post.content}}
+            {{post.content | safe}}
         </div>
         <div class="panel-footer" id='article-footer'>
         {%if not current_user.is_liking(post)%}

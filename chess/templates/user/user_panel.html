@@ -16,7 +16,7 @@
     </div>
     <div class='panel-title'>
         {%if user.username != current_user.username%}
-        <p href="#" class="btn btn-primary" style='width:100%'>Invite to play</a>
+        <p href="#" onclick='invite_to_play()' class="btn btn-primary" style='width:100%'>Invite to play</a>
         {%endif%}
             {%if not current_user.is_anonymous and current_user.username != user.username and not user.is_friends_with(current_user)%}
         <p type='button' onclick='submit_friend_request()' class='btn btn-primary' style='width:100%'>Add friend</a>
@@ -24,5 +24,13 @@
     {%if not current_user.is_anonymous and current_user.username != user.username and user.is_friends_with(current_user)%}
         <p type='button' onclick='submit_unfriend_request()' class='btn btn-danger' style='width:100%'>Remove friend</a>
     {%endif%}
+    <div id="{{user.username}}-panel-home" class="btn user-panel-btn {%if subpage == 'home'%}active{%endif%}"><span class="glyphicon glyphicon-home"></span>Home</div>
+    {%if not current_user.is_anonymous and current_user.username == user.username%}
+    <div id="{{user.username}}-panel-settings" class="btn user-panel-btn {%if subpage == 'settings'%}active{%endif%}"><span class="glyphicon glyphicon-cog"></span>Settings</div>
+    {%endif%}
+    <div id="{{user.username}}-panel-games" class='btn user-panel-btn'><span class="glyphicon glyphicon-tower"></span>Games</div>
+    <div id="{{user.username}}-panel-friends" class='btn user-panel-btn'><span class="glyphicon glyphicon-user"></span>Friends</div>
+    <div id="{{user.username}}-panel-posts" class='btn user-panel-btn'><span class="glyphicon glyphicon-book"></span>Blog</div>
+    <div id="{{user.username}}-panel-activity" class='btn user-panel-btn'><span class="glyphicon glyphicon-eye-open"></span>Activity</div>
     </div>
     </div>

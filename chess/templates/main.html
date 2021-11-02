@@ -111,7 +111,12 @@
 {%endblock%}
 
 {%block content%}
-    <div class='container'>
-        {%block sitecontent%}{%endblock%}
+    <div class='container-fluid'>
+        <div class='row'>
+            <div id='left-side-bar' class='col-md-2'>{%block leftside%}{%endblock%}</div>
+            <div id='site-content' class='col-md-8'>{%block sitecontent%}{%endblock%}</div>
+            <div id='right-side-bar' class='col-md-2'>{%block rightside%}{%endblock%}</div>
+        </div>
+        
     </div>
 {%endblock%}

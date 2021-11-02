@@ -37,13 +37,20 @@
             submit_unfriend_request = () => {
                 $.post('/me/remove_friend', {sender: "{{current_user.id}}", receiver: "{{user.id}}"}).done(()=>{location.reload()})
             }
+            invite_to_play = () => {
+                window.href = "{{url_for('create_game')}}";
+            }
         {%endif%}
     </script>
 {%endblock%}
 
+{%block leftside%}
+    {%include 'user/user_panel.html'%}
+{%endblock%}
+
 {%block sitecontent%}
 
-    {%include 'user/user_panel.html'%}
+    
 
     <div style='display: inline'>
         <table class='table' id='friends-table'>

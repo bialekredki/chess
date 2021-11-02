@@ -20,7 +20,7 @@ class StupidAI(AI):
         return moves[random.randint(0,len(moves)-1)]
 
 class StockfishIntegrationAI(AI):
-    stockfish_path = '/home/oskar/stockfish/sf/stockfish'
+    stockfish_path = './ai/bin/stockfish'
 
     def __init__(self,FEN:str,level:int=15):
         self.engine = Stockfish(self.stockfish_path)
@@ -39,3 +39,6 @@ class StockfishIntegrationAI(AI):
 
     def is_possible(self,move:str)->bool:
         return self.engine.is_move_correct(move)
+
+    def has_ended(self)->bool:
+        return True if self.engine.get_best_move() is None else False

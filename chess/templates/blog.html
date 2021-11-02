@@ -2,7 +2,11 @@
 
 {%block scripts%}
     {{super()}}
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
     <script>
+
+    tinymce.init({selector: '#post-content'});
+
     post_creation = () => {
         $('#posts').css('display', 'none');
         $('#post_creation').css('display', 'block');
@@ -16,6 +20,7 @@
     }
 
     send_post = () => {
+        console.log($('#post-content').val());
         $.post('/blog/post', {subject: $('#post-subject').val(), content: $('#post-content').val()}).done(()=>{location.reload()})
     };
 
@@ -36,8 +41,8 @@
             <input type='submit' class='btn btn-submit' onclick='send_post()'/>
             <input type='button' onclick='cancel_post_creation()' value='Cancel' class='btn btn-danger'>
         </div>
-        <div id='posts'>
-            <span class='post-list' id='top-posts'>
+        <div id='posts' class='row'>
+            <div class='post-list col-md-4' id='top-posts'>
                     <table class='table inline-table'>
                     <thead><tr><th>Top posts</th></tr></thead>
                     <tbody>
@@ -46,8 +51,8 @@
                     {%endfor%}
                     </tbody>
                 </table>
-            </span >
-            <span class='post-list' id='friends-posts'>
+            </div >
+            <div class='post-list col-md-4' id='friends-posts'>
                 <table class='table inline-table'>
                     <thead><tr><th>Your friends' posts</th></tr></thead>
                     <tbody>
@@ -57,8 +62,8 @@
                     {%endfor%}
                     </tbody>
                 </table>
-            </span>
-            <span class='post-list' id='latests-posts'>
+            </div>
+            <div class='post-list col-md-4' id='latests-posts'>
                 <table class='table inline-table'>
                     <thead><tr><th>Your friends' posts</th></tr></thead>
                     <tbody>
@@ -68,6 +73,6 @@
                     {%endfor%}
                     </tbody>
                 </table>
-            </span>
+            </div>
         </div>
 {%endblock%}
