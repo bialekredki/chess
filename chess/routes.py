@@ -14,7 +14,7 @@ from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm, SettingsFor
 from chess.game import Move, MovesOrdering, PieceType
 from chess.game_options import GameFormat, GameOption
 from chess.game import Game as ChessGame
-from chess.models import BlogPost, BlogPostComment, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
+from chess.models import BlogPost, BlogPostComment, ChessBoardTheme, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
 from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_matchmaking_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token, resolve_matchmaking_token
@@ -376,7 +376,8 @@ def api_play_game_setup():
 @app.route('/play/<id>')
 @login_required
 def game(id):
-    return render_template('game.html', game=Game.query.filter_by(id=id).first_or_404())
+    theme:ChessBoardTheme = ChessBoardTheme.query.filter_by(name=current_user.theme).first_or_404()
+    return render_template('game.html', game=Game.query.filter_by(id=id).first_or_404(), theme=theme)
 
 @socketio.on('message')
 def message_handler(data):

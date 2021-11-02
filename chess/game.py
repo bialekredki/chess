@@ -298,6 +298,10 @@ class Game:
             if not self.is_tile_empty([row, col]) or (row,col)  in possible_moves.keys():   return False
         return True
 
+    def has_ended(self):
+        return True if StockfishIntegrationAI(self.FEN).has_ended() else False
+
+
     def FENotation(self):
         print('FEN')
         fen = list()

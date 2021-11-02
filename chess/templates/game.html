@@ -169,9 +169,9 @@ var main_socket = io();
         for(let row = 7; row >= 0; row--){
             for(let col = 0; col < 8; col++){
                 tiles.push(new PIXI.Graphics())
-                if(row % 2 == col % 2)  tiles.at(-1).beginFill(white_tile);
+                if(row % 2 == col % 2)  tiles.at(-1).beginFill(black_tile);
                 else 
-                    tiles.at(-1).beginFill(black_tile);
+                    tiles.at(-1).beginFill(white_tile);
                 tiles.at(-1).drawRect(start_x,start_y, size_x, size_y);
                 tiles.at(-1).endFill();
                 tiles.at(-1).interactive = true;
@@ -223,27 +223,46 @@ var main_socket = io();
         let tiles = Array()
         let sprites = Array()
         let game_state = new Game();
-        let black_tile = 0x832f47;
-        let white_tile = 0xdb9eaf;
+        let black_tile = parseInt("{{theme.black_tile_colour}}");
+        let white_tile = parseInt("{{theme.white_tile_colour}}");;
         let colour = null;
         
-
-        let textures = {'bbishop': PIXI.Texture.from('/static/img/gfx/Chess_bdt60.png'),
-        'wbishop': PIXI.Texture.from('/static/img/gfx/Chess_blt60.png'),
-        'bpawn': PIXI.Texture.from('/static/img/gfx/Chess_pdt60.png'),
-        'wpawn': PIXI.Texture.from('/static/img/gfx/Chess_plt60.png'),
-        'bknight': PIXI.Texture.from('/static/img/gfx/Chess_ndt60.png'),
-        'wknight': PIXI.Texture.from('/static/img/gfx/Chess_nlt60.png'),
-        'brook': PIXI.Texture.from('/static/img/gfx/Chess_rdt60.png'),
-        'wrook': PIXI.Texture.from('/static/img/gfx/Chess_rlt60.png'),
-        'bqueen': PIXI.Texture.from('/static/img/gfx/Chess_qdt60.png'),
-        'wqueen': PIXI.Texture.from('/static/img/gfx/Chess_qlt60.png'),
-        'bking': PIXI.Texture.from('/static/img/gfx/Chess_kdt60.png'),
-        'wking': PIXI.Texture.from('/static/img/gfx/Chess_klt60.png')}
+        let piece_set = "{{theme.piece_set}}"
+        let textures = {'bbishop': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_bdt60.png`),
+        'wbishop': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_blt60.png`),
+        'bpawn': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_pdt60.png`),
+        'wpawn': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_plt60.png`),
+        'bknight': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_ndt60.png`),
+        'wknight': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_nlt60.png`),
+        'brook': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_rdt60.png`),
+        'wrook': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_rlt60.png`),
+        'bqueen': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_qdt60.png`),
+        'wqueen': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_qlt60.png`),
+        'bking': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_kdt60.png`),
+        'wking': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_klt60.png`)}
         Object.entries(textures).forEach(([key,value]) => {
             value.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
         })
         app.stage.addChild(container);
+
+    $('#flip-board-button').click(function(e) {
+        if(container.x == 0){
+            container.x = container.parent.width;
+            container.y = container.parent.height;
+            container.angle = 180;
+            sprites.forEach(function(e) {
+                e.angle = 180;
+            })
+        }
+        else {
+            container.x = 0;
+            container.y = 0;
+            container.angle = 0;
+            sprites.forEach(function(e) {
+                e.angle = 0;
+            })
+        }
+    })
 
         
 </script>
@@ -287,6 +306,7 @@ var main_socket = io();
             </div>  
         </div>
     {%endif%}
+    <div id='flip-board-button' style='width:100%;'><p class='btn ' style='width:100%;'>Flip the board</p>
     {%if current_user.is_in_game(game)%}
         <div style='width:100%;'><p class='btn btn-danger' style='width:100%;'>Surrender</p>
         </div>

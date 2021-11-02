@@ -1,6 +1,6 @@
 from chess import app, db, socketio
 from chess.models import User, Game, GameState
-from chess.AI import StockfishIntegrationAI, get_ai
+from chess.AI import EvaluationMethod, StockfishIntegrationAI, get_ai
 from chess.game import Game as ChessGame, Move, PieceType
 from flask_login import current_user
 
@@ -8,18 +8,12 @@ from flask_login import current_user
 def set_game(js,methods='GET'):
     game:Game = Game.query.filter_by(id=js['id']).first()
     app.logger.info('[SOCKET] %s received', str(js))
-    if game.show_eval_bar:
-        eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-        eval = eval['value']
-        print(eval)
-        if eval < -2000: eval = -2000
-        if eval > 2000: eval = 2000
-        print(eval)
-        eval = ((eval + 2000)/(4000))*100
-        print(eval)
-        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
-    else:
-        socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
+    result = dict()
+    result['tiles'] = game.get_current_state().to_list()
+    sf = StockfishIntegrationAI(game.get_current_state().to_fen())
+    if game.show_eval_bar:  result['eval'] = sf.get_eval(EvaluationMethod.PERCENTAGE)
+    result['ended'] = sf.has_ended()
+    socketio.emit('setgame', result, namespace=f'/game-{game.id}')
 
 @socketio.on('getcolour')
 def set_colour(js,methods='GET'):

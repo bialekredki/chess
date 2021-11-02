@@ -1,7 +1,13 @@
 import random
+from enum import Enum
+from typing import Union
 from stockfish import Stockfish
 
 AI_INTEGRATIONS_NAMES_LIST=['Stupid', 'Stockfish-1', 'Stockfish-2', 'Stockfish-3', 'Stockfish-4', 'Stockfish-5', 'Stockfish-6', 'Stockfish-7', 'Stockfish-8','Stockfish-9']
+
+class EvaluationMethod(Enum):
+    CENTIPAWN = 0
+    PERCENTAGE = 1
 
 def get_ai(name:str,fen:str=None):
     if name == 'Stupid':
@@ -42,3 +48,10 @@ class StockfishIntegrationAI(AI):
 
     def has_ended(self)->bool:
         return True if self.engine.get_best_move() is None else False
+
+    def get_eval(self,method:EvaluationMethod)->'Union[float,int]':
+        centipawn = self.engine.get_evaluation()
+        if centipawn['type'] != 'cp': centipawn = 10000-(100*centipawn['value'])
+        else: centipawn = centipawn['value']
+        if method == EvaluationMethod.CENTIPAWN: return centipawn
+        elif method == EvaluationMethod.PERCENTAGE: return 1 / (1+10**(-(centipawn/100)/4))
