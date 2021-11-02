@@ -43,4 +43,8 @@ class SettingsForm(FlaskForm):
     confirm_new_password = PasswordField('Confirm new password')
     name = StringField('Your name')
     chess_theme = SelectField('Theme', choices=[(x.name,x.name) for x in ChessBoardTheme.query.all()])
+    password = PasswordField('Confirm password')
     submit = SubmitField('Accept changes')
+
+    def change_password(self)->bool:
+        return True if self.new_password.data == self.confirm_new_password.data and self.new_password.data != '' else False

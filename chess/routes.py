@@ -281,9 +281,21 @@ def user_settings(username):
     if current_user.username != username: return redirect(url_for('index'))
     form = SettingsForm()
     if form.validate_on_submit():
-        if form.new_password != form.confirm_new_password:
-            flash('Passwords are different')
-            
+        print(form.is_private.data)
+        user:User = User.query.filter_by(id=current_user.id).first_or_404()
+        if form.new_password.data != form.confirm_new_password.data:
+            print('p')
+            flash('Passwords are different', 'danger')
+        elif not user.check_password(form.password.data):
+            print('x')
+            flash('You have entered a wrong password.','danger')
+        else:
+            print(form)
+            if form.change_password(): user.set_password(form.new_password.data)
+            if form.name.data != '': user.set_name(form.name.data)
+            user.set_private(True if form.is_private.data == 'private' else False)
+            user.set_theme(form.chess_theme.data)
+            return redirect(url_for('user', username=user.username))
     return render_template('user/user_settings.html', form=form, user=current_user)
 
 @app.route('/me/add_friend', methods=['GET', 'POST'])

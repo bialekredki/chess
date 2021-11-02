@@ -70,6 +70,8 @@ class User(UserMixin, ITimeStampedModel):
                     backref=db.backref('liked_by', lazy='dynamic'))
     mm_request = db.relationship("MatchmakerRequest", back_populates="user", uselist=False)
     theme = db.Column(db.String(32), default='Classic')
+    name = db.Column(db.String(64))
+    private = db.Column(db.Boolean)
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -130,6 +132,26 @@ class User(UserMixin, ITimeStampedModel):
         if not self.is_in_game(game): return False
         if not game.is_host_white and self._is_gamehost(game) or game.is_host_white and self._is_gameguest(game): return True
         return False
+
+    def set_name(self,name:str):
+        self.name = name
+        db.session.commit()
+
+    def set_theme(self, theme:str):
+        self.theme = theme
+        db.session.commit()
+
+    def get_theme(self)->'ChessBoardTheme':
+        return ChessBoardTheme.query.filter_by(name=self.theme).first()
+
+    def toggle_private(self):
+        self.private = not self.private
+        db.session.commit()
+    
+    def set_private(self, private:bool):
+        self.private = private
+        db.session.commit()
+
 
 class BlogPost(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
@@ -331,6 +353,14 @@ class ChessBoardTheme(db.Model):
     piece_set = db.Column(db.String(32))
     black_tile_colour = db.Column(db.Integer)
     white_tile_colour = db.Column(db.Integer)
+
+class EloUserRating(ITimeStampedModel):
+    id = db.Column(db.Integer, primary_key=True)
+    rapid = db.Column(db.Integer, default=400)
+    blitz = db.Column(db.Integer, default=400)
+    standard = db.Column(db.Integer, default=400)
+    bullet = db.Column(db.Integer, default=400)
+    puzzles = db.Column(db.Integer, default=400)
                     
 
 
