@@ -1998,3 +1998,63 @@
   . chess.background.game_tick
   . chess.background.matchmaker_task
 [0m
+[1;36m 
+ -------------- celery@OKlenovo v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.11.0-38-generic-x86_64-with-glibc2.29 2021-11-03 00:32:00
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fd207ba91c0
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@OKlenovo v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.11.0-38-generic-x86_64-with-glibc2.29 2021-11-03 00:35:59
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fcf890761c0
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@OKlenovo v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.11.0-38-generic-x86_64-with-glibc2.29 2021-11-03 00:36:36
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7effd46331c0
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m

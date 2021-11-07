@@ -27,6 +27,9 @@ def get_possible_moves(js, methods=['GET']):
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
     print(game.get_current_state().to_fen())
+    if StockfishIntegrationAI(game.get_current_state().to_fen()).has_ended():   
+        socketio.emit('setpossiblemoves', {'moves': [], 'to':current_user.id}, namespace=f'/game-{game.id}')
+        return
     chess_game = ChessGame(game.game_state[-1].to_list(), game.game_state[-1].to_fen())
     if current_user.id != game.host_id and current_user.id != game.guest_id:
         return #TODO: Handle discrepancies on server-client
