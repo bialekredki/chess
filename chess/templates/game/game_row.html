@@ -10,4 +10,5 @@
     {% else%}
     <span>{{game.timestamp_creation.strftime("%d/%m/%y %H:%M")}}: {{'\t'}}{{user.username}} vs <a href="{{url_for('user', username=oponent.username)}}">{{oponent.username}}</a></span>
     {% endif%}
+    <span><a href="{{url_for('game_token', token=game_url(game.id,current_user.id))}}">Go to this game</a></span>
 </li>

@@ -46,15 +46,13 @@
 </script>
 {%endblock%}
 
+{%block leftside%}
+    {%include 'messages_sidebar.html'%}
+{%endblock%}
 
 {%block sitecontent%}
-<div class='row'>
-    <div class='panel panel-info col-md-3' style='height:90vh;'>
-        <div class='panel-heading'><div class='panel-title'>Conversations</div></div>
-        <ul id='conversation-list' class='list-group'>
-        </ul>
-    </div>
-    <div class='col-md-9 panel panel-info' style='height:90vh;'>
+
+    <div class='panel panel-info' style='height:90vh;'>
         <div id='messages-container' style='height:85vh;'>
             <ul id='conversation' class='list-group scrollable'></ul>
         </div>

@@ -8,6 +8,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from chess import login
+from chess.geolocation import country_alpha2_to_name
 from chess.utils import round_datetime
 from chess.game import Game as ChessGame, PieceType, Tile
 from typing import Union
@@ -72,6 +73,7 @@ class User(UserMixin, ITimeStampedModel):
     theme = db.Column(db.String(32), default='Classic')
     name = db.Column(db.String(64))
     private = db.Column(db.Boolean)
+    country = db.Column(db.String(8))
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -151,6 +153,14 @@ class User(UserMixin, ITimeStampedModel):
     def set_private(self, private:bool):
         self.private = private
         db.session.commit()
+
+    def countryname(self) -> str:
+        return country_alpha2_to_name(self.country)
+
+    def can_access_private(self, user:'User') -> bool:
+        if not self.private: return True
+        if self.private and (self.id == user.id or self.is_friends_with(user)): return True
+        return False
 
 
 class BlogPost(ITimeStampedModel):
@@ -236,8 +246,21 @@ class Game(ITimeStampedModel):
         self.game_state.append(state)
         db.session.commit()
 
-    def get_current_state(self):
+    def get_current_state(self) -> 'GameState':
         return self.game_state[-1]
+
+    def ended(self) -> bool:
+        return True if self.state > 0 else False
+
+    def is_draw(self) -> bool:
+        if self.ended() or self.state < 3: return False
+        return True
+
+    def white_won(self) -> bool:
+        return True if self.state == 1 else False
+
+    def black_won(self) -> bool:
+        return True if self.state == 2 else False
 
 
 class RecoveryTry(ITimeStampedModel):
@@ -270,7 +293,7 @@ class GameState(db.Model):
         db.session.commit()
 
     def set(self,fen:str):
-        print('BEFORE SET:', fen)
+        print('GIVEN',fen)
         attr = fen.split(' ')
         for a in attr:
             print(a)
@@ -284,7 +307,11 @@ class GameState(db.Model):
         self.half_move_clock = int(attr[4])
         self.move = int(attr[5])
         db.session.commit()
-        print('SET:', self.placement)
+        print('GOT',str(self))
+
+    def __str__(self) -> str:
+        return f"""{self.placement} {self.turn} {'K' if self.white_castle_king_side else ''}{'Q' if self.white_castle_queen_side else ''}{'k' if self.black_castle_king_side else ''}{'q' if self.black_castle_queen_side else ''} {self.en_passent} {self.half_move_clock} {self.move}
+        """
 
 
     def to_fen(self)->str:
@@ -293,12 +320,12 @@ class GameState(db.Model):
         if self.white_castle_queen_side: result += 'Q'
         if self.black_castle_king_side: result += 'k'
         if self.black_castle_queen_side: result += 'q'
+        if not self.white_castle_king_side and not self.white_castle_queen_side and not self.black_castle_king_side and not self.black_castle_queen_side: result += '-'
         result += ' ' + self.en_passent + ' ' + str(self.half_move_clock) + ' ' + str(self.move) 
         return result
         
     def to_list(self)->list:
         result = list()
-        print(self.placement)
         rows = self.placement.split('/')
         for r,row in enumerate(reversed(rows)):
             result.append(list())
@@ -361,6 +388,7 @@ class EloUserRating(ITimeStampedModel):
     standard = db.Column(db.Integer, default=400)
     bullet = db.Column(db.Integer, default=400)
     puzzles = db.Column(db.Integer, default=400)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
                     
 
 

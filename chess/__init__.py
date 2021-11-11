@@ -41,6 +41,7 @@ app.config['MAIL_USERNAME'] = os.environ['APP_MAIL_USERNAME']
 app.config['MAIL_PASSWORD'] = os.environ['APP_MAIL_PASSWORD']
 app.config['MAIL_DEFAULT_SENDER'] = 'oskarkorgul@gmail.com'
 
+
 celery = Celery(app.name, backend='rpc://')
 celery.conf.update(app.config)
 db = SQLAlchemy(app)
@@ -55,4 +56,5 @@ if __name__ == '__main__':
     socketio.run(app, debug=True)
 
 from chess import routes, models, real_time_routes
-from chess.background import game_tick
+from chess.emailtoken import game_socket_token
+app.jinja_env.globals.update(game_url=game_socket_token)

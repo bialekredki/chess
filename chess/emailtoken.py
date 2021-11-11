@@ -1,8 +1,32 @@
 from datetime import datetime
-from itsdangerous import URLSafeTimedSerializer, serializer
+from itsdangerous import URLSafeTimedSerializer, URLSafeSerializer
 
 from chess import app, mail, db
 from chess.models import Message, RecoveryTry,User
+
+def friendship_request_token(sender:User, receiver:User):
+    serializer = URLSafeSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps({'sender': (sender.username, sender.id), 'receiver':(receiver.username, receiver.id)}, salt=app.config['SECURITY_PASSWORD_SALT'])
+
+def get_friendship_request_token(token):
+    serializer = URLSafeSerializer(app.config['SECRET_KEY'])
+    try:
+        users:dict = serializer.loads(token, salt=app.config['SECURITY_PASSWORD_SALT'])
+    except:
+        return False
+    return users
+
+def game_socket_token(game_id:int,user_id:int):
+    serializer = URLSafeSerializer(app.config['SECRET_KEY'])
+    return serializer.dumps((game_id, user_id), salt=app.config['SECURITY_PASSWORD_SALT'])
+
+def get_game_socket_token(token):
+    serializer = URLSafeSerializer(app.config['SECRET_KEY'])
+    try:
+        ids = serializer.loads(token, salt=app.config['SECURITY_PASSWORD_SALT'])
+    except:
+        return False
+    return ids
 
 def generate_email_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])

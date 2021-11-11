@@ -14,10 +14,11 @@ from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm, SettingsFor
 from chess.game import Move, MovesOrdering, PieceType
 from chess.game_options import GameFormat, GameOption
 from chess.game import Game as ChessGame
+from chess.geolocation import get_country_from_ip
 from chess.models import BlogPost, BlogPostComment, ChessBoardTheme, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
 import flask_mail
 from flask_login import current_user, login_user, logout_user
-from chess.emailtoken import confirm_email_token, confrim_recovery_token, generate_email_token, generate_matchmaking_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token, resolve_matchmaking_token
+from chess.emailtoken import confirm_email_token, confrim_recovery_token, friendship_request_token, generate_email_token, generate_matchmaking_token, generate_recovery_token, generate_game_invitation_token, confirm_game_invitation_token, get_friendship_request_token, get_game_socket_token, resolve_matchmaking_token
 from chess.utils import round_datetime
 from sqlalchemy import or_
 from flask_socketio import SocketIO,send,emit
@@ -74,6 +75,8 @@ def login()->Union[Response,str]:
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             return redirect(url_for('login'))
+        user.country = get_country_from_ip(request.remote_addr)
+        db.session.commit()
         login_user(user, remember=form.remember_me.data)
         #flash(f'Login requested for user {form.username.data}, remember_me={form.remember_me.data}')
         return redirect(url_for('index'))
@@ -154,6 +157,7 @@ def create_account():
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
+        user.country = get_country_from_ip(request.remote_addr)
         db.session.add(user)
         db.session.commit()
         token = generate_email_token(user.email)
@@ -280,6 +284,7 @@ def user_games(username:User):
 def user_settings(username):
     if current_user.username != username: return redirect(url_for('index'))
     form = SettingsForm()
+    form.is_private.data = 'private' if current_user.private else 'public'
     if form.validate_on_submit():
         print(form.is_private.data)
         user:User = User.query.filter_by(id=current_user.id).first_or_404()
@@ -301,10 +306,24 @@ def user_settings(username):
 @app.route('/me/add_friend', methods=['GET', 'POST'])
 @login_required
 def add_friend():
-    sender = User.query.get(request.form.get('sender'))
-    receiver = User.query.get(request.form.get('receiver'))
-    sender.add_friend(receiver)
+    sender:User = User.query.get(request.form.get('sender'))
+    receiver:User = User.query.get(request.form.get('receiver'))
+    token = friendship_request_token(sender, receiver)
+    message:Message = Message(receiver_id=receiver.id, sender_id=sender.id, content=f"{sender.username} wants to add you to friends. <a href={url_for('add_friend_token', token=token)}>Click to accept</a>")
+    db.session.add(message)
+    db.session.commit()
+    socketio.emit('send_message', {'sender': current_user.username}, namespace=f'/messages-{receiver.id}')
     return ('', 200)
+
+@app.route('/me/add_friend/<token>', methods=['GET', 'POST'])
+@login_required
+def add_friend_token(token):
+    users:dict = get_friendship_request_token(token)
+    if type(users) is bool: return redirect(url_for('index'))
+    sender:User = User.query.get(users.get('sender')[1])
+    receiver:User = User.query.get(users.get('receiver')[1])
+    sender.add_friend(receiver)
+    return redirect(url_for('user', username=sender.username))
 
 @app.route('/me/remove_friend', methods=['GET', 'POST'])
 @login_required
@@ -379,6 +398,13 @@ def game(id):
     theme:ChessBoardTheme = ChessBoardTheme.query.filter_by(name=current_user.theme).first_or_404()
     return render_template('game.html', game=Game.query.filter_by(id=id).first_or_404(), theme=theme)
 
+@app.route('/play/token/<token>')
+@login_required
+def game_token(token):
+    game_id, user_id = get_game_socket_token(token)
+    theme:ChessBoardTheme = ChessBoardTheme.query.filter_by(name=current_user.theme).first_or_404()
+    return render_template('game.html', game=Game.query.filter_by(id=game_id).first_or_404(), theme=theme, socket_token=token)
+
 @socketio.on('message')
 def message_handler(data):
     send(data)
@@ -401,7 +427,7 @@ def create_game(guest_id:int=None,type:int=0):
         guest:User = User.query.filter_by(username=request.form.get('Friends')).first()
         guest_id = guest.id
         token = generate_game_invitation_token(current_user.id, guest_id)
-        message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, content=f"Invites you to <a href='{url_for('create_game_invitation', token=token)}'>game</a>")
+        message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, content=render_template('game/game_invitation_info.html', url=url_for('create_game_invitation', token=token)))
         socketio.emit('send_message', {'sender': current_user.username}, namespace=f'/messages-{guest_id}')
         db.session.add(message)
         db.session.commit()
@@ -464,8 +490,19 @@ def create_game_invitation(token):
 
 @app.route('/api/game/history/<id>', methods=['GET'])
 @login_required
-def api_game_history():
-    game:Game = Game.query.filter_by(id=request.args.get['id']).first_or_404()
-    if request.args.get('all'): return ('', 200)
-    return 
+def api_game_history(id):
+    payload = dict()
+    
+    game:Game = Game.query.filter_by(id=id).first_or_404()
+    print(game.game_state)
+    for i,gs in enumerate(game.game_state):
+        if i == len(game.game_state)-1:break
+        print(i, str(gs))
+        moves = list()
+        now:ChessGame = ChessGame(gs.to_list(), gs.to_fen())
+        next:ChessGame = ChessGame(game.game_state[i+1].to_list(), game.game_state[i+1].to_fen())
+        move = now.get_moves_between(next)
+        if payload.get(gs.move) is None: payload[gs.move] = list()
+        payload.get(gs.move).append(move)
+    return  (jsonify(payload), 200)
 

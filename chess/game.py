@@ -2,6 +2,8 @@
 from typing import Union
 import enum
 import json
+
+from celery.utils.imports import cwd_in_path
 from chess.AI import StupidAI, StockfishIntegrationAI
 
 class Tile:
@@ -11,6 +13,10 @@ class Tile:
 
     def __repr__(self) -> str:
         return f'<Tile {[self.piece,self.colour,]}>'
+
+    def __eq__(self, o: 'Tile') -> bool:
+        if self.piece == o.piece and self.colour == o.colour: return True
+        return False
 
     def jsonify(self) -> dict:
         return {'piece':self.piece, 'colour': self.colour}
@@ -333,4 +339,16 @@ class Game:
             if not colour and x[1]: res = res + 'q'
         print(res)
 
-
+    def get_moves_between(self, other:'Game'):
+        diffs = dict()
+        res = dict()
+        for x in range(8):
+            for y in range(8):
+                if self.at((x,y)) == other.at((x,y)): continue
+                #print(self.at((x,y)), other.at((x,y)))
+                diffs[(x,y)] = ((self.at((x,y)), other.at((x,y))))
+        #print(diffs)
+        if len(diffs.keys()) > 2:
+            if (0,0) in diffs or (7,0) in diffs: return 'O-O-O'
+            else: return 'O-O'
+        return Move(tuple(diffs.keys())[0], tuple(diffs.keys())[1]).algebraic()

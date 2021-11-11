@@ -45,12 +45,15 @@
 {%endblock%}
 
 {%block leftside%}
+    {%set subpage='home'%}
     {%include 'user/user_panel.html'%}
 {%endblock%}
 
 {%block sitecontent%}
 
-    
+{% if not user.can_access_private(current_user)%}
+    {%include 'user/user_private.html'%}
+{%else%}
 
     <div style='display: inline'>
         <table class='table' id='friends-table'>
@@ -87,4 +90,5 @@
     </tbody>
      </table>
     </div>
+{%endif%}
 {%endblock%}

@@ -75,6 +75,7 @@ var main_socket = io();
         }
         [tiles,sprites] = renderApp(app,game_state,textures)
         console.timeEnd('x')
+        populateHistory()
     });
 
 
@@ -208,11 +209,11 @@ var main_socket = io();
         });
         return [tiles, sprites];
     }
-        
+        let app_size = $('#root')[0].clientHeight;
         const app = new PIXI.Application({
-            width: $('#root')[0].clientWidth,
-            height: $('#root')[0].clientHeight,
-            backgroundColor: 0x000000,
+            width: app_size,
+            height: app_size,
+            backgroundColor: 0xFFFFFF,
             resolution: window.devicePixelRation || 1,
             antialias: true,
             autoresize: true
@@ -264,36 +265,45 @@ var main_socket = io();
         }
     })
 
+    populateHistory = ()=>{
+        $('#game-history-list').children().each(function(index,value, array) {
+            $(value).remove();
+            console.log(value)
+            })
+        $.get("{{url_for('api_game_history', id=game.id)}}").done((data)=>{
+        Object.entries(data).forEach(function(e) {
+            $('#game-history-list').append(`<li class='list-group-item'>${e[0]} ${e[1]}</li>`)
+        })
+    })
+    }
+    populateHistory()
+    
+
         
 </script>
 {%endblock%}
 
 {%block sitecontent%}
-<div id='black-user-banner'>
-    <table class='table'>
-    <thead></thead>
-    <tbody>    
+<div id='up-user-banner'>
     {%if game.is_host_white%}
         {%set user=game.guest%}
     {%else%}
         {%set user=game.host%}
     {%endif%}
     {%if user != None%}
-    {%include 'user/user_table_row.html'%}</tbody></table>
+    {%include 'user/user_game.html'%}</tbody></table>
     {%endif%}
 </div>
 <div id='root' style='height:80vh;'>
 </div>
-    <table class='table'>
-    <thead></thead>
-    <tbody>    
+<div id='down-user-banner'>
     {%if game.is_host_white%}
         {%set user=game.host%}
     {%else%}
         {%set user=game.guest%}
     {%endif%}
     {%if user != None%}
-    {%include 'user/user_table_row.html'%}</tbody></table>
+    {%include 'user/user_game.html'%}</tbody></table>
     {%endif%}
 </div>
 {%endblock%}
@@ -311,6 +321,8 @@ var main_socket = io();
         <div style='width:100%;'><p class='btn btn-danger' style='width:100%;'>Surrender</p>
         </div>
     {%endif%}
+    <ul class='list-group' id='game-history-list'>
+    </ul>
     </div>
 {%endblock%}
 

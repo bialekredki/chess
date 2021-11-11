@@ -167,3 +167,7 @@
 .user-panel-btn>.glyphicon {
     margin-right: 5px;
 }
+
+#game-history-list>li {
+    font-size: small;
+}

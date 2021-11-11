@@ -1,0 +1,10 @@
+<ul class='list-group'>
+    <li class="list-group-item {{colour}}-player">
+        {%if user.has_avatar%}
+            {%set imgfile = "/img/avatar/{}_mini.png".format(user.id)%}
+            <img src="{{url_for('static', filename=imgfile)}}">
+        {%endif%}
+        {%set imgfile = "/img/flags/flags/1x1/{}.svg".format(user.country.lower())%}
+        <span><img src="{{url_for('static', filename=imgfile)}}" width='16' height='16' style='border:1px solid black;' title={{user.countryname()}}>{{user.username}}</span>
+    </li>
+</ul>

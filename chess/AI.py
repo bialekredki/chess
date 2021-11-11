@@ -49,7 +49,7 @@ class StockfishIntegrationAI(AI):
     def has_ended(self)->bool:
         return True if self.engine.get_best_move() is None else False
 
-    def get_eval(self,method:EvaluationMethod)->'Union[float,int]':
+    def get_eval(self,method:EvaluationMethod=EvaluationMethod.PERCENTAGE)->'Union[float,int]':
         centipawn = self.engine.get_evaluation()
         if centipawn['type'] != 'cp': centipawn = 10000-(100*centipawn['value'])
         else: centipawn = centipawn['value']

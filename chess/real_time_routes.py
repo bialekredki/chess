@@ -26,8 +26,13 @@ def set_colour(js,methods='GET'):
 def get_possible_moves(js, methods=['GET']):
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
+    sf = StockfishIntegrationAI(game.get_current_state().to_fen())
     print(game.get_current_state().to_fen())
-    if StockfishIntegrationAI(game.get_current_state().to_fen()).has_ended():   
+    if sf.has_ended():   
+        gs = game.get_current_state().turn
+        game.state = 1 if gs == 'w' else 2
+        print(game.state)
+        db.session.commit()
         socketio.emit('setpossiblemoves', {'moves': [], 'to':current_user.id}, namespace=f'/game-{game.id}')
         return
     chess_game = ChessGame(game.game_state[-1].to_list(), game.game_state[-1].to_fen())
@@ -54,8 +59,6 @@ def confirm_move(js, methods='GET'):
         app.logger.info("%s submitted a move outside his turn[black]", current_user.username)
         return
     sf = StockfishIntegrationAI(current_state.to_fen())
-    print(current_state.to_fen())
-    print(sf.engine.get_board_visual())
     move = Move(js['from'], js['to'])
     move = move.algebraic()
     cg = ChessGame(current_state.to_list(), current_state.to_fen())
@@ -73,36 +76,28 @@ def confirm_move(js, methods='GET'):
     print('MOVE PLAYER', new_state.to_fen())
     if game.AI is not None and ((current_user.plays_as_white(game) and new_state.is_black_turn()) or (current_user.plays_as_black(game) and new_state.is_white_turn())):
         ai = get_ai(game.AI, new_state.to_fen())
+        print(ai.engine.get_board_visual())
         move = ai.best_move()
         fen = ai.move(move)
         new_state = GameState()
         new_state.set(fen)
         game.game_state.append(new_state)
-        print(new_state.to_fen())
+        print(str(new_state))
         move = Move.from_algebraic(move)
         if game.show_eval_bar:
-            eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-            eval = eval['value']
-            print(eval)
+            eval = sf.get_eval()
             if eval < -2000: eval = -2000
             if eval > 2000: eval = 2000
-            print(eval)
             eval = ((eval + 2000)/(4000))*100
-            print(eval)
             socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
         else:
             socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
-            print('Second')
     else:
             if game.show_eval_bar:
-                eval = StockfishIntegrationAI(game.get_current_state().to_fen(), 15).engine.get_evaluation()
-                eval = eval['value']
-                print(eval)
+                eval = sf.get_eval()
                 if eval < -2000: eval = -2000
                 if eval > 2000: eval = 2000
-                print(eval)
                 eval = ((eval + 2000)/(4000))*100
-                print(eval)
                 socketio.emit('setgame', {'tiles': game.game_state[-1].to_list(), 'eval': eval}, namespace=f'/game-{game.id}')
             else:
                 socketio.emit('setgame', {'tiles': game.game_state[-1].to_list()}, namespace=f'/game-{game.id}')
