@@ -8,10 +8,16 @@
     {%if user.username == current_user.username%}
         <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
     {%endif%}
-    <div class="panel-heading"><h5 class="panel-title">{{user.username}}</h5></div>
+    {%set imgfile = "/img/flags/flags/1x1/{}.svg".format(user.country.lower())%}
+    <div class="panel-heading"><h5 class="panel-title"><img src="{{url_for('static', filename=imgfile)}}" width='16' height='16' style='border:1px solid black;' title={{user.countryname()}}>{{user.username}}
+    {%if user.name%}
+    <br>
+    ({{user.name}})
+    {%endif%}
+    </h5></div>
     <div class="panel-body">
         <p class="card-text">Joined:{{user.get_human_creation_delta()}}</p>
-        <p class="card-text">Ranking:{{user.elo}}</p>
+        <p class="card-text">Ranking:{{user.get_current_rating()}}</p>
         <p class="card-text">Posts:{{user.get_posts_count()}}</p>
     </div>
     <div class='panel-title'>

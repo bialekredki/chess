@@ -4378,3 +4378,1357 @@
   . chess.background.game_tick
   . chess.background.matchmaker_task
 [0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:20:43
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fcc69f4ec10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:22:45
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f5b6a5c7c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:23:18
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f6c0149cc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:24:45
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f14f713dc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:44:36
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f1aaa9acc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:48:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f63f3e47c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:48:16
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f5447996c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:50:33
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f059b742c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:51:47
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f68763d2c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:52:04
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f543022dc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 15:52:17
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fd399aafc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 21:56:34
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f1361ecbc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:00:19
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f84a693cc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:00:49
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fb4cf958c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:01:31
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fdc72036c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:01:45
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7ff77ceb5c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:02:32
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f6070958c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:06:00
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f3e2c695c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:07:31
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fc108fb5c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:10:16
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f973c07ec10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:10:46
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f8a8a789c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:10:57
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fef2abeac10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:11:17
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f2e74b0ac10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:12:21
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7febb85dfc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:13:38
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fa8ac7dfc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:17:00
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f49942c6c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:18:07
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f074491fc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:19:36
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7ff60f9f2c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:20:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fe2bdf3bc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:22:14
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f4ac8a04c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:22:55
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f51ccbe2c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:23:09
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f6ebca67c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:24:23
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fc124b2ac10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:26:01
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f13aaa5cc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:26:25
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f18c4c91c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:26:48
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f897dcf7c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:27:05
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fb38eaa3c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:30:57
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f640d22bc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-11 22:33:51
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fdd1b80fc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 16:38:23
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fc569396c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 18:45:55
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f49039a4c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 18:46:09
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fa2d5f71c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 18:46:27
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f99c76bdc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 18:59:42
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fced178ac10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 18:59:56
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fa5e3bdcc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:00:32
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f3f0b9d5c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:01:51
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f2dd1695c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:06:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f383d530c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:21:03
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f36d9d9ac10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:22:32
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f62c748dc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:23:15
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7feb6d1bec10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:27:34
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f4668a08c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:28:12
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fdf23cc3c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:42:15
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f86a57cbc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:42:54
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fe6f7c35c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:43:49
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fb0d47afc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:45:21
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f0b65617c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:45:52
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f202f838c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:46:20
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f09c34bfc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:48:46
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f937dbb8c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:58:10
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fec49119c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 19:59:21
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f310d3d3c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 20:01:10
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fd7fafd4c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 20:02:30
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7f9fa6a6fc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 20:02:50
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fda9162dc10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 20:06:46
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fef4cf96c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m
+[1;36m 
+ -------------- celery@pop-os v5.1.2 (sun-harmonics)
+--- ***** ----- 
+-- ******* ---- Linux-5.13.0-7614-generic-x86_64-with-glibc2.29 2021-11-13 20:07:48
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         chess:0x7fe752827c10
+- ** ---------- .> transport:   amqp://guest:**@localhost:5672//
+- ** ---------- .> results:     rpc://
+- *** --- * --- .> concurrency: 6 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+[0m[0m
+[tasks]
+  . chess.background.check_expired_games
+  . chess.background.game_tick
+  . chess.background.matchmaker_task
+[0m

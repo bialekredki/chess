@@ -74,6 +74,7 @@ class User(UserMixin, ITimeStampedModel):
     name = db.Column(db.String(64))
     private = db.Column(db.Boolean)
     country = db.Column(db.String(8))
+    ratings = db.relationship("EloUserRating")
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -161,6 +162,18 @@ class User(UserMixin, ITimeStampedModel):
         if not self.private: return True
         if self.private and (self.id == user.id or self.is_friends_with(user)): return True
         return False
+
+    def get_current_rating(self) -> 'EloUserRating':
+        return self.ratings[-1]
+
+    def add_rating(self, timestamp:datetime=datetime.utcnow()):
+        if len(self.ratings) == 0:
+            e = EloUserRating(timestamp_creation=timestamp, user_id=self.id)
+        else:
+            current = self.get_current_rating()
+            e = EloUserRating(timestamp_creation=timestamp, user_id=self.id, rapid=current.rapid, blitz=current.blitz, bullet=current.bullet, puzzles=current.puzzles, standard=current.standard)
+        db.session.add(e)
+        db.session.commit()
 
 
 class BlogPost(ITimeStampedModel):
@@ -261,6 +274,9 @@ class Game(ITimeStampedModel):
 
     def black_won(self) -> bool:
         return True if self.state == 2 else False
+
+    def is_ai_game(self) -> bool:
+        return True if self.guest_id == -1 or self.host_id == -1 else False
 
 
 class RecoveryTry(ITimeStampedModel):
@@ -388,7 +404,16 @@ class EloUserRating(ITimeStampedModel):
     standard = db.Column(db.Integer, default=400)
     bullet = db.Column(db.Integer, default=400)
     puzzles = db.Column(db.Integer, default=400)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
+
+    def jsonify(self) -> dict:
+        return {'created':self.timestamp_creation,
+            'rapid': self.rapid,
+            'blitz': self.blitz,
+            'standard' : self.standard,
+            'bullet' : self.bullet,
+            'puzzles' : self.puzzles
+        }
                     
 
 

@@ -41,3 +41,9 @@ class GameFormat(enum.Enum):
         for f in GameFormat:
             if id == f.value.get('id'): return f
 
+    @classmethod
+    def by_name(self,name:str):
+        for f in GameFormat:
+            print(name, f.value.get('name'))
+            if name == f.value.get('name'): return f
+

@@ -41,12 +41,54 @@
                 window.href = "{{url_for('create_game')}}";
             }
         {%endif%}
+    
+    $.get("{{url_for('api_user_rating', id=user.id)}}", {'label':'day'}).done(function(e) {
+        console.log(e)
+        const colours = [
+            ['#fcba03', '#ffd769'],
+            ['#29549e', '#577ec2'],
+            ['#ab422b', '#bf6652'],
+            ['#16662e', '#65c983'],
+            ['#822870', '#c25fae']
+        ]
+        Object.entries(e).forEach(function(value,index,array) {
+            console.log(value)
+            const ctx = $(`#${value[0]}-chart`);
+            console.log(ctx)
+            console.log(value[0])
+            console.log([...Array(value[1].length).keys()])
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [...Array(value[1].length).keys()],
+                    datasets: [
+                        {
+                            label: value[0],
+                            data: value[1],
+                            borderColor: colours[index][0],
+                            backgroundColor: colours[index][1]
+                        }
+                    ]
+                }
+            })
+            console.log(chart)
+        });
+    })
+    
     </script>
 {%endblock%}
 
 {%block leftside%}
     {%set subpage='home'%}
     {%include 'user/user_panel.html'%}
+{%endblock%}
+
+{%block rightside%}
+    <canvas id='blitz-chart' class='ratings-chart'></canvas>
+    <canvas id='standard-chart' class='ratings-chart'></canvas>
+    <canvas id='bullet-chart' class='ratings-chart'></canvas>
+    <canvas id='rapid-chart' class='ratings-chart'></canvas>
+    <canvas id='puzzles-chart' class='ratings-chart'></canvas>
 {%endblock%}
 
 {%block sitecontent%}

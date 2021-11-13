@@ -30,7 +30,7 @@ def get_possible_moves(js, methods=['GET']):
     print(game.get_current_state().to_fen())
     if sf.has_ended():   
         gs = game.get_current_state().turn
-        game.state = 1 if gs == 'w' else 2
+        game.state = 1 if gs == 'b' else 2
         print(game.state)
         db.session.commit()
         socketio.emit('setpossiblemoves', {'moves': [], 'to':current_user.id}, namespace=f'/game-{game.id}')

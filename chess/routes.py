@@ -27,7 +27,7 @@ import json
 from fuzzywuzzy import fuzz
 import os.path
 from chess.mail import send_mail
-from chess.background import game_tick, on_raw_message, matchmaker_task
+from chess.background import check_expired_games, on_raw_message, matchmaker_task
 
 
 
@@ -158,6 +158,7 @@ def create_account():
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         user.country = get_country_from_ip(request.remote_addr)
+        user.add_rating()
         db.session.add(user)
         db.session.commit()
         token = generate_email_token(user.email)
@@ -413,6 +414,8 @@ def message_handler(data):
 @login_required
 def create_game(guest_id:int=None,type:int=0):
     app.logger.info("%s [GAME] starts a new game with %s", current_user.username, request.form)
+    game_format = GameFormat.by_id(request.form.get('Time Control'))
+    time = game_format.value['time'] if game_format.value['time'] is not None else -1
     if request.form.get('AI'):
         guest_id = -1
         if request.form.get('bar',False) == 'true': bar = True
@@ -426,7 +429,7 @@ def create_game(guest_id:int=None,type:int=0):
     if request.form.get('Friends') is not None:
         guest:User = User.query.filter_by(username=request.form.get('Friends')).first()
         guest_id = guest.id
-        token = generate_game_invitation_token(current_user.id, guest_id)
+        token = generate_game_invitation_token(current_user.id, guest_id, {'time_limit': time})
         message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, content=render_template('game/game_invitation_info.html', url=url_for('create_game_invitation', token=token)))
         socketio.emit('send_message', {'sender': current_user.username}, namespace=f'/messages-{guest_id}')
         db.session.add(message)
@@ -474,12 +477,12 @@ def play_matchmaker(token):
 def create_game_invitation(token):
     print(token)
     try:
-        host_id, guest_id = confirm_game_invitation_token(token)
+        host_id, guest_id, options = confirm_game_invitation_token(token)
     except:
         return redirect(url_for('index'))
 
     if guest_id != current_user.id: return redirect(url_for('index'))
-    game:Game = Game(host_id=host_id,guest_id=guest_id)
+    game:Game = Game(host_id=host_id,guest_id=guest_id, time_limit=options.get('time_limit', -1))
     gs = GameState()
     db.session.add(gs)
     db.session.add(game)
@@ -506,3 +509,76 @@ def api_game_history(id):
         payload.get(gs.move).append(move)
     return  (jsonify(payload), 200)
 
+@app.route('/api/user/<id>/rating', methods=['GET'])
+@login_required
+def api_user_rating(id):
+    user:User = User.query.get(id)
+    if request.args.get('label') == 'day':
+        result = dict()
+        for obj in user.ratings:
+            e = obj.jsonify()
+            for key, value in e.items():
+                if key == 'created': continue
+                if key not in result and key != 'created':
+                    result[key] = list()
+                result[key].append(value)
+        return (jsonify(result), 200)
+    return (jsonify([e.jsonify() for e in user.ratings]), 200)
+
+@app.route('/api/user/<id>/stats', methods=['GET'])
+@login_required
+def api_user_stats(id):
+    """API route used for getting user's(specified by id) statistics, for example, their win to loss ratio.
+        
+    GET Args:
+        type(str): Type of statistics to be requested allowed are:
+            'percentage': % of wins
+            'wins': Number of wins
+            'loses': Number of loses
+            'all': All
+        colour(str): Additional filtering by games in which user played as specified colour. Allowed values are 'white' and 'black'. Defaults to None.
+        AI(bool): Add games played against AI. Defaults to false.
+
+
+    GET Response:
+        dict|Object: Empty if no stats could be computed(specific games are non-existent), {'data':data} if type was specified, {'type1':data_type1,'type2':data_type2 ...} else
+    Args:
+        id (int): ID of a user in the database
+    """
+    def _calc_percentage(wins,loses,draws):
+        try:
+            return wins/(draws+loses+wins)*100
+        except:
+            return None
+    result = dict()
+    colour = request.args.get('colour')
+    ai = request.args.get('AI', False)
+    type = request.args.get('type')
+    user:User = User.query.get(id)
+    if len(user.hostgames) == 0 and len(user.guestgames) == 0: return(jsonify({}), 200)
+    loses = 0
+    wins = 0
+    draws = 0
+    total = None
+    for games in [user.guestgames, user.hostgames]:
+        for game in games:
+            if colour is not None and colour and user.plays_as_black(game): continue
+            if colour is not None and not colour and user.plays_as_white(game): continue
+            if not ai and game.is_ai_game(): continue
+            if not game.ended(): continue 
+            if game.is_draw(): draws = draws + 1
+            elif game.white_won() and user.plays_as_white(game) or game.black_won() and user.plays_as_black(game): wins = wins + 1
+            else: loses = loses + 1
+            total = total + 1 if total is not None else 1
+    type_mapping = {
+        'percentage':_calc_percentage(wins,loses,draws),
+        'wins': wins if total is not None else total,
+        'loses': loses if total is not None else total,
+        'draws': draws if total is not None else total
+    }
+    if type is None or type == 'all':
+        for t,f in type_mapping.items():
+            result[t] = f
+    else:
+        result[type] = type_mapping[type]
+    return(jsonify(result), 200)
