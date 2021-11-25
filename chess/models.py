@@ -3,14 +3,18 @@ from flask.templating import render_template
 
 from sqlalchemy.orm import backref
 from sqlalchemy.sql.schema import ForeignKey
-from chess import db
+from chess import db, app
+import math
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from chess import login
+from chess.elo import expected_score, k_factor
+from chess.game_options import GameConclusionFlag, GameFormat, PlayerMovePermission
 from chess.geolocation import country_alpha2_to_name
 from chess.utils import round_datetime
-from chess.game import Game as ChessGame, PieceType, Tile
+from chess.game import Game as ChessGame, PieceType, Tile, Move
+from chess.AI import StockfishIntegrationAI, AI, PREFERRED_INTEGRATION, get_ai
 from typing import Union
 
 @login.user_loader
@@ -24,6 +28,14 @@ friends_table = db.Table('friends',
 liked_table = db.Table('liked_posts', 
     db.Column('luser_id', db.Integer, db.ForeignKey('user.id'), primary_key=True), 
     db.Column('blog_post_id', db.Integer, db.ForeignKey('blog_post.id'), primary_key=True))
+
+
+class ChessBoardTheme(db.Model):
+    __tablename__ = 'chess_board_theme'
+    name = db.Column(db.String(32), primary_key=True)
+    piece_set = db.Column(db.String(32))
+    black_tile_colour = db.Column(db.Integer)
+    white_tile_colour = db.Column(db.Integer)
 
 
 
@@ -74,7 +86,7 @@ class User(UserMixin, ITimeStampedModel):
     name = db.Column(db.String(64))
     private = db.Column(db.Boolean)
     country = db.Column(db.String(8))
-    ratings = db.relationship("EloUserRating")
+    ratings = db.relationship("EloUserRating", back_populates="user")
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -172,8 +184,20 @@ class User(UserMixin, ITimeStampedModel):
         else:
             current = self.get_current_rating()
             e = EloUserRating(timestamp_creation=timestamp, user_id=self.id, rapid=current.rapid, blitz=current.blitz, bullet=current.bullet, puzzles=current.puzzles, standard=current.standard)
+        e.user_id = self.id
         db.session.add(e)
         db.session.commit()
+
+    def get_rating(self, format_name:str='rapid'):
+        rating:'EloUserRating' = self.get_current_rating()
+        if format_name == 'rapid': return rating.rapid
+        elif format_name == 'blitz': return rating.blitz
+        elif format_name == 'bullet': return rating.bullet
+        elif format_name == 'standard': return rating.standard
+        elif format_name == 'puzzles': return rating.puzzles
+
+    def update_rating(self, rating:int, format_name:str='rapid'):
+        self.get_current_rating().update(format_name, rating)
 
 
 class BlogPost(ITimeStampedModel):
@@ -254,6 +278,7 @@ class Game(ITimeStampedModel):
     is_host_white = db.Column(db.Boolean, default=True)
     game_state = db.relationship('GameState', backref='game', lazy=True)
     show_eval_bar = db.Column(db.Boolean, default=False)
+    ranked = db.Column(db.Boolean, default=False)
 
     def add_new_state(self, state):
         self.game_state.append(state)
@@ -263,20 +288,175 @@ class Game(ITimeStampedModel):
         return self.game_state[-1]
 
     def ended(self) -> bool:
-        return True if self.state > 0 else False
+        return self.state != GameConclusionFlag.NONE.id()
 
     def is_draw(self) -> bool:
-        if self.ended() or self.state < 3: return False
-        return True
+        return self.state in GameConclusionFlag.draws_ids()
 
     def white_won(self) -> bool:
-        return True if self.state == 1 else False
+        return self.state == GameConclusionFlag.WHITE_WON.id()
 
     def black_won(self) -> bool:
-        return True if self.state == 2 else False
+        return self.state == GameConclusionFlag.BLACK_WON.id()
 
     def is_ai_game(self) -> bool:
         return True if self.guest_id == -1 or self.host_id == -1 else False
+
+    def is_expired(self) -> bool:
+        return True if (datetime.utcnow() - self.timestamp_creation).total_seconds() > self.time_limit else False
+
+    def white_player(self) -> User:
+        if self.host.plays_as_white(self): return self.host
+        return self.guest 
+
+    def black_player(self) -> User:
+        if self.host.plays_as_black(self): return self.host
+        return self.guest
+
+    def player_by_colour(self, colour:bool) -> User:
+        if colour: return self.white_player()
+        return self.black_player()
+
+    def get_game_format(self) -> GameFormat:
+        return GameFormat.by_time(self.time_limit)
+
+    def get_game_format_model(self) -> str:
+        return self.get_game_format().model_name()
+
+    def is_rapid_or_blitz(self) -> bool:
+        game_format = GameFormat.by_time(self.time_limit)
+        if game_format is None: return False
+        if 'rapid' in game_format.value['id'] or 'blitz' in game_format.value['id']: return True
+        return False
+
+    def _get_elo_changes(self, colour:bool) -> dict:
+        if self.host_id == -1 or self.guest_id == -1: return {'win': 0, 'draw':0, 'lose': 0}
+        user:User = self.player_by_colour(colour)
+        opponent:User = self.player_by_colour(not colour)
+        format_model = self.get_game_format_model()
+        exp = expected_score(user.get_rating(format_model), opponent.get_rating(format_model))
+        k = k_factor(user.get_rating(format_model), rapid=self.is_rapid_or_blitz(), games_number=len(user.hostgames)+len(user.guestgames))
+        return {'win': math.floor(k*(1-exp)), 'draw': math.floor(k*(0.5-exp)), 'lose': math.floor(k*(0-exp))}
+
+    def is_ai_game(self) -> bool:
+        return True if self.guest_id == -1 else False
+
+
+    def _apply_elo_changes(self):
+        if not self.ended(): return
+        model = self.get_game_format_model()
+        white_changes = self._get_elo_changes(True)
+        black_changes = self._get_elo_changes(False)
+        print(white_changes)
+        white_rating = self.white_player().get_rating(model)
+        black_rating = self.black_player().get_rating(model)
+        print(white_rating)
+        if self.is_draw():
+            white_rating = white_rating + white_changes['draw']
+            black_rating = black_rating + black_changes['draw']
+        if self.black_won():
+            white_rating = white_rating+white_changes['lose']
+            white_rating = black_rating + black_changes['win']
+        if self.white_won():
+            white_rating = white_rating+white_changes['win']
+            black_rating = black_rating + black_changes['lose']
+        self.white_player().update_rating(white_rating, model)
+        self.black_player().update_rating(black_rating, model)
+
+    def set_state_flag(self, state:GameConclusionFlag):
+        self.state = state.id()
+        db.session.commit()
+
+    def conclude(self):
+        if not self.check_for_endgame(): return
+        print('CHECK FOR ENDGAME ',self.check_for_endgame())
+        game:ChessGame = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+        new_state = GameConclusionFlag.NONE
+        if self.check_draw(False,game): new_state = GameConclusionFlag.DRAW
+        elif self.check_for_repetition(): new_state = GameConclusionFlag.DRAW_BY_REPETITION
+        elif self.fifty_move_draw(): new_state = GameConclusionFlag.DRAW_BY_50_MOVES
+        elif self.check_black_win(False, game): new_state = GameConclusionFlag.BLACK_WON
+        elif self.check_white_win(False, game): new_state = GameConclusionFlag.WHITE_WON
+        self.set_state_flag(new_state)
+        if self.ranked: self._apply_elo_changes()
+        print('SELF>STATE ', self.state)
+
+    def can_player_move(self, user:User) -> PlayerMovePermission:
+        print(user.id, self.host.id)
+        if not user.is_in_game(self): return PlayerMovePermission.GUEST
+        if user.plays_as_black(self) and self.get_current_state().is_white_turn() or user.plays_as_white(self) and self.get_current_state().is_black_turn(): return PlayerMovePermission.NO
+        return PlayerMovePermission.YES
+
+    def new_game_state(self, fen:str=None):
+        new_state = GameState()
+        self.game_state.append(new_state)
+        if fen is not None: new_state.set(fen)
+        db.session.add(new_state)
+        db.session.commit()
+
+    def is_move_possible(self, move:str, engine_integration:AI) -> bool: 
+        return engine_integration.is_possible(move)
+
+    def move(self,move:Union[Move,str],colour:bool) -> bool:
+        if type(move) == Move: algebraic = move.algebraic()
+        else: algebraic = move
+        engine = get_ai(PREFERRED_INTEGRATION, self.get_current_state().to_fen())
+        chess_game = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+        if not self.is_move_possible(algebraic, engine):
+            app.logger.info('%s submitted impossible move', 'White' if colour else 'Black')
+            return False
+        self.new_game_state(engine.move(algebraic))
+        self.conclude()
+        return True
+
+    def evaluate(self, state_rindex:int=0):
+        if state_rindex > len(self.game_state) - 1: raise ValueError(f"{self}{__name__} state_rindex{state_rindex} cannot be larger than {len(self.game_state)-1}.")
+        engine = StockfishIntegrationAI(self.game_state[-1-state_rindex].to_fen())
+        return engine.get_eval()
+
+    def check_for_repetition(self) -> bool:
+        current:GameState = self.get_current_state()
+        counter:int = 0
+        for position in self.game_state[0:len(self.game_state)-1]:
+            if position == current: counter += 1
+        if counter >= 3: return True
+        return False
+
+    def fifty_move_draw(self) -> bool:
+        if self.get_current_state().half_move_clock == 50: return True
+        return False
+
+    def check_for_endgame(self) -> bool:
+        return StockfishIntegrationAI(self.get_current_state().to_fen()).best_move() == None
+
+    def check_draw(self, check_for_endgame:bool=True, game:ChessGame=None) -> bool:
+        if check_for_endgame and not self.check_for_endgame(): return False
+        if game is None: game:ChessGame = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+        for colour in [True, False]:
+            if game.is_check(colour): return False
+        return True
+
+    def check_white_win(self, check_for_endgame:bool=True, game:ChessGame=None) -> bool:
+        if check_for_endgame and not self.check_for_endgame(): return False
+        if game is None: game:ChessGame = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+        return game.is_check(False)
+    
+    def check_black_win(self, check_for_endgame:bool=True, game:ChessGame=None) -> bool:
+        if check_for_endgame and not self.check_for_endgame(): return False
+        if game is None: game:ChessGame = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+        return game.is_check(True)
+
+    def state_flag(self, set:bool=False) -> GameConclusionFlag:
+        flag:GameConclusionFlag = GameConclusionFlag.NONE
+        if not self.check_for_endgame():
+            game:ChessGame = ChessGame(self.get_current_state().to_list(), self.get_current_state().to_fen())
+            if self.check_draw(False,game): flag =  GameConclusionFlag.DRAW
+            if self.check_black_win(False,game): flag = GameConclusionFlag.BLACK_WON
+            if self.check_white_win(False,game): flag =  GameConclusionFlag.WHITE_WON
+            if self.check_for_repetition(): flag = GameConclusionFlag.DRAW_BY_REPETITION
+            if self.fifty_move_draw(): flag = GameConclusionFlag.DRAW_BY_50_MOVES
+        if set: self.state = flag.id()
+        return flag
 
 
 class RecoveryTry(ITimeStampedModel):
@@ -298,21 +478,47 @@ class GameState(db.Model):
     game_id = db.Column(db.Integer, db.ForeignKey(Game.id))
     en_passent = db.Column(db.String(2), default='-')
 
+    def __eq__(self, other:'GameState'):
+        if (self.placement == other.placement and self.turn == other.turn and
+        self.white_castle_queen_side == other.white_castle_queen_side and
+        self.black_castle_queen_side == other.black_castle_queen_side and
+        self.black_castle_king_side == other.black_castle_king_side and
+        self.white_castle_king_side == other.black_castle_king_side and
+        self.turn == other.turn): return True
+        return False
+
     def is_white_turn(self)->bool:
         return True if self.turn == 'w' else False
 
     def is_black_turn(self)->bool:
         return True if self.turn == 'b' else False
 
+    def ended(self)->bool:
+        if StockfishIntegrationAI(self.to_fen()).best_move is None: return True
+        return False
+
+    def is_draw(self)->bool:
+        if not self.ended(): return False
+        game:ChessGame = ChessGame(self.to_list(), self.to_fen())
+        if game.is_check(True) or game.is_check(False): return False
+        return True
+
+    def black_won(self)->bool:
+        if not self.ended() or self.is_draw(): return False
+        if self.turn == 'w': return True
+        return False
+
+    def white_won(self)->bool:
+        if not self.ended() or self.is_draw(): return False
+        if self.turn == 'b': return True
+        return False
+
     def toggle_turn(self):
         self.turn = 'w' if self.turn == 'b' else 'b'
         db.session.commit()
 
     def set(self,fen:str):
-        print('GIVEN',fen)
         attr = fen.split(' ')
-        for a in attr:
-            print(a)
         self.placement = attr[0]
         self.turn = attr[1]
         self.white_castle_king_side = True if 'K' in attr[2] else False
@@ -323,7 +529,6 @@ class GameState(db.Model):
         self.half_move_clock = int(attr[4])
         self.move = int(attr[5])
         db.session.commit()
-        print('GOT',str(self))
 
     def __str__(self) -> str:
         return f"""{self.placement} {self.turn} {'K' if self.white_castle_king_side else ''}{'Q' if self.white_castle_queen_side else ''}{'k' if self.black_castle_king_side else ''}{'q' if self.black_castle_queen_side else ''} {self.en_passent} {self.half_move_clock} {self.move}
@@ -391,11 +596,7 @@ class MatchmakerRequest(ITimeStampedModel):
         return MatchmakerRequest.query.filter_by(id=obj.get('id')).first()
 
 
-class ChessBoardTheme(db.Model):
-    name = db.Column(db.String(32), primary_key=True)
-    piece_set = db.Column(db.String(32))
-    black_tile_colour = db.Column(db.Integer)
-    white_tile_colour = db.Column(db.Integer)
+
 
 class EloUserRating(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
@@ -404,7 +605,23 @@ class EloUserRating(ITimeStampedModel):
     standard = db.Column(db.Integer, default=400)
     bullet = db.Column(db.Integer, default=400)
     puzzles = db.Column(db.Integer, default=400)
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship('User', back_populates='ratings')
+
+    def by_name(self, name:str) -> int:
+        return self.jsonify().get(name) 
+
+    def update(self, name:str, new_val:int):
+        print(new_val)
+        print(name)
+        if new_val < 0: return
+        if name == 'rapid': self.rapid = new_val 
+        elif name == 'blitz': self.blitz = new_val 
+        elif name == 'bullet': self.blitz = new_val 
+        elif name == 'standard': self.blitz = new_val 
+        elif name == 'puzzles': self.blitz = new_val 
+        db.session.commit()
+        print(self.jsonify())
 
     def jsonify(self) -> dict:
         return {'created':self.timestamp_creation,

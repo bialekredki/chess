@@ -32,6 +32,21 @@ class GameFormat(enum.Enum):
     STANDARD1 = {'id': 'standard_1', 'name': "Standard 1h'", 'time': 60*60, 'type':'btn'}
     STANDARD2 = {'id': 'standard_2', 'name': "Standard 2h'", 'time': 60*60*2, 'type':'btn'}
 
+    def model_name(self) -> str:
+        return self.value['id'].split('_')[0]
+
+    def is_bullet(self) -> bool:
+        return self.value['id'].split('_')[0] == 'bullet'
+
+    def is_blitz(self) -> bool:
+        return self.value['id'].split('_')[0] == 'blitz'
+
+    def is_rapid(self) -> bool:
+        return self.value['id'].split('_')[0] == 'rapid'
+
+    def is_standard(self) -> bool:
+        return self.value['id'].split('_')[0] == 'standard'
+
     @classmethod
     def all(self):
         return [f.value for f in GameFormat]
@@ -47,3 +62,37 @@ class GameFormat(enum.Enum):
             print(name, f.value.get('name'))
             if name == f.value.get('name'): return f
 
+    @classmethod
+    def by_time(self, time:int):
+        for f in GameFormat:
+            if f.value.get('time') == time: return f
+
+
+class PlayerMovePermission(enum.Enum):
+    GUEST = (False, 'guest')
+    NO = (False, 'other turn')
+    YES = (True, 'yes')
+
+    def reason(self): return self.value[1]
+    def permission(self): return self.value[0]
+
+
+class GameConclusionFlag(enum.Enum):
+    NONE = {'id': 0, 'str': None}
+    DRAW = {'id': 1, 'str': 'Draw'}
+    DRAW_BY_REPETITION = {'id': 2, 'str': 'Draw by repetion'}
+    DRAW_BY_50_MOVES = {'id': 3, 'str': 'Draw by 50 moves rule'} 
+    WHITE_WON = {'id': 4, 'str': 'White won'}
+    BLACK_WON = {'id': 5, 'str': 'Black won'}
+
+
+    def id(self) -> int: return self.value['id']
+
+    def text(self) -> str: return self.value['str']
+
+    @classmethod
+    def draws_ids(self) -> 'list[int]':
+        return [x.id() for x in [GameConclusionFlag.DRAW, GameConclusionFlag.DRAW_BY_50_MOVES, GameConclusionFlag.DRAW_BY_REPETITION]]
+    @classmethod
+    def ids(self):
+        return [flag['id'] for flag in GameConclusionFlag]

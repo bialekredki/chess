@@ -1,4 +1,10 @@
-<div class='panel panel-info'>
+<div class='panel panel-info game-invitation'>
     <div class='panel-header'>Game invitation</div>
+    {%if 'ranked' in options and options['ranked']%}
+    <p> Ranked </p>
+    {%endif%}
+    {%if 'time_limit' in options%}
+    <p> {{ options['time_limit']}} </p>
+    {%endif%}
     <a href="{{url}}">Accept</a>
 </div>

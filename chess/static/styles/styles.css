@@ -171,3 +171,8 @@
 #game-history-list>li {
     font-size: small;
 }
+
+.list-group.black>li {
+    background-color: black;
+    color: white;
+}

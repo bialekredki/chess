@@ -284,8 +284,7 @@ def user_games(username:User):
 @login_required
 def user_settings(username):
     if current_user.username != username: return redirect(url_for('index'))
-    form = SettingsForm()
-    form.is_private.data = 'private' if current_user.private else 'public'
+    form = SettingsForm(is_private='private' if current_user.private else 'public')
     if form.validate_on_submit():
         print(form.is_private.data)
         user:User = User.query.filter_by(id=current_user.id).first_or_404()
@@ -415,7 +414,8 @@ def message_handler(data):
 def create_game(guest_id:int=None,type:int=0):
     app.logger.info("%s [GAME] starts a new game with %s", current_user.username, request.form)
     game_format = GameFormat.by_id(request.form.get('Time Control'))
-    time = game_format.value['time'] if game_format.value['time'] is not None else -1
+    time = game_format.value['time'] if game_format is not None and game_format.value['time'] is not None else -1
+    ranked = request.form.get('ranked', False)
     if request.form.get('AI'):
         guest_id = -1
         if request.form.get('bar',False) == 'true': bar = True
@@ -429,8 +429,10 @@ def create_game(guest_id:int=None,type:int=0):
     if request.form.get('Friends') is not None:
         guest:User = User.query.filter_by(username=request.form.get('Friends')).first()
         guest_id = guest.id
-        token = generate_game_invitation_token(current_user.id, guest_id, {'time_limit': time})
-        message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, content=render_template('game/game_invitation_info.html', url=url_for('create_game_invitation', token=token)))
+        token = generate_game_invitation_token(current_user.id, guest_id, {'time_limit': time, 'ranked': ranked})
+        message:Message = Message(receiver_id=guest_id, sender_id=current_user.id, 
+            content=render_template('game/game_invitation_info.html', url=url_for('create_game_invitation', token=token), 
+            options={'time_limit': game_format.value['name'] if game_format is not None else None, 'ranked': ranked}))
         socketio.emit('send_message', {'sender': current_user.username}, namespace=f'/messages-{guest_id}')
         db.session.add(message)
         db.session.commit()
@@ -482,7 +484,7 @@ def create_game_invitation(token):
         return redirect(url_for('index'))
 
     if guest_id != current_user.id: return redirect(url_for('index'))
-    game:Game = Game(host_id=host_id,guest_id=guest_id, time_limit=options.get('time_limit', -1))
+    game:Game = Game(host_id=host_id,guest_id=guest_id, time_limit=options.get('time_limit', -1), ranked=bool(options.get('ranked', False)))
     gs = GameState()
     db.session.add(gs)
     db.session.add(game)
@@ -582,3 +584,18 @@ def api_user_stats(id):
     else:
         result[type] = type_mapping[type]
     return(jsonify(result), 200)
+
+
+@app.route('/api/game/<id>/elo', methods=['GET'])
+@login_required
+def api_game_elo_change(id):
+    game:Game = Game.query.get(id)
+    return game._get_elo_changes(request.args.get('colour',True))
+
+@app.route('/api/game/<id>/colour', methods=['GET'])
+@login_required
+def api_game_colour(id):
+    game:Game = Game.query.get(id)
+    if game.white_player().id == current_user.id: return (jsonify(True),200)
+    elif game.black_player().id == current_user.id: return (jsonify(False), 200)
+    else: return (jsonify(None), 200)

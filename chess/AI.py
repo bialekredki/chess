@@ -4,6 +4,7 @@ from typing import Union
 from stockfish import Stockfish
 
 AI_INTEGRATIONS_NAMES_LIST=['Stupid', 'Stockfish-1', 'Stockfish-2', 'Stockfish-3', 'Stockfish-4', 'Stockfish-5', 'Stockfish-6', 'Stockfish-7', 'Stockfish-8','Stockfish-9']
+PREFERRED_INTEGRATION = 'Stockfish-9'
 
 class EvaluationMethod(Enum):
     CENTIPAWN = 0
@@ -19,6 +20,8 @@ def get_ai(name:str,fen:str=None):
 class AI():
     __abstract__=True
     def make_move(self):
+        pass
+    def is_possible(self,move:str) -> bool:
         pass
 
 class StupidAI(AI):

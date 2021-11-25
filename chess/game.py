@@ -274,9 +274,13 @@ class Game:
         self.check = False
 
     def find_king(self,colour:bool):
-        return None
+        for x in range(8):
+            for y in range(8):
+                tile = self.at((x,y))
+                if tile.piece == PieceType.KING.value and tile.colour == colour : return {'xy': (x,y), 'tile': self.at((x,y))}
 
     def is_check(self,colour:bool)->bool:
+        print(self.find_king(colour))
         if self.find_king(colour)['xy'] in self.get_all_moves(colour=not colour, order_by=MovesOrdering.BY_DESTINATION, depth=False, collision=False).keys(): return True
         return False
 

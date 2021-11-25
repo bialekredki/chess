@@ -20,8 +20,10 @@
     }
 
     send_post = () => {
-        console.log($('#post-content').val());
-        $.post('/blog/post', {subject: $('#post-subject').val(), content: $('#post-content').val()}).done(()=>{location.reload()})
+        let content = null;
+        if (tinymce == null) content = $('#post-content').val();
+        else content = tinymce.get('post-content').getContent();
+        $.post('/blog/post', {subject: $('#post-subject').val(), content: content}).done(()=>{location.reload()})
     };
 
     $('#post_creation').css('display', 'none');

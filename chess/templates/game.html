@@ -16,6 +16,10 @@ var sound = new Howl({
 var main_socket = io();
     main_socket.on('connect', function() {
         console.log('Socket connected');
+        $.get("{{url_for('api_game_colour', id=game.id)}}").done(function(e) {
+            colour=e;
+        })
+        
     });
     main_socket.emit('getgame', {id:"{{game.id}}"});
         {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
@@ -56,7 +60,7 @@ var main_socket = io();
         app.lastObj = tile;
     });
     socket.on('setgame', (json)=>{
-        console.log('g')
+        console.log(json)
         console.time('x')
         sound.play();
         json['tiles'].forEach((row,r)=>{
@@ -99,6 +103,7 @@ var main_socket = io();
                 tiles.forEach((tile)=>{
                     tile.alpha = 1;
                 });
+                console.log(colour)
                 if(game_state.at(app.lastObj.location[0], app.lastObj.location[1]).colour == colour && game_state.at(target.location[0], target.location[1]).colour != colour){
                     main_socket.emit('confirmmove', {
                         game: game_state,
@@ -207,6 +212,12 @@ var main_socket = io();
         sprites.forEach((sprite) => {
             container.addChild(sprite);
         });
+        console.log(orientation)
+        if (orientation > 0){
+            sprites.forEach(function(e) {
+                e.angle = 180;
+            })
+        }
         return [tiles, sprites];
     }
         let app_size = $('#root')[0].clientHeight;
@@ -227,6 +238,8 @@ var main_socket = io();
         let black_tile = parseInt("{{theme.black_tile_colour}}");
         let white_tile = parseInt("{{theme.white_tile_colour}}");;
         let colour = null;
+
+        let orientation = 0;
         
         let piece_set = "{{theme.piece_set}}"
         let textures = {'bbishop': PIXI.Texture.from(`/static/img/gfx/${piece_set}/Chess_bdt60.png`),
@@ -248,6 +261,7 @@ var main_socket = io();
 
     $('#flip-board-button').click(function(e) {
         if(container.x == 0){
+            orientation = 1;
             container.x = container.parent.width;
             container.y = container.parent.height;
             container.angle = 180;
@@ -256,6 +270,7 @@ var main_socket = io();
             })
         }
         else {
+            orientation = 0;
             container.x = 0;
             container.y = 0;
             container.angle = 0;
@@ -263,6 +278,10 @@ var main_socket = io();
                 e.angle = 0;
             })
         }
+        let up = $('#up-user-banner').children().detach();
+        let down = $('#down-user-banner').children().detach();
+        $('#up-user-banner').append(down);
+        $('#down-user-banner').append(up);
     })
 
     populateHistory = ()=>{
@@ -277,6 +296,9 @@ var main_socket = io();
     })
     }
     populateHistory()
+    $('#up-user-banner').children().addClass('black')
+
+
     
 
         
@@ -316,12 +338,13 @@ var main_socket = io();
             </div>  
         </div>
     {%endif%}
-    <div id='flip-board-button' style='width:100%;'><p class='btn ' style='width:100%;'>Flip the board</p>
+    <div id='clock'></div>
+    <div id='flip-board-button' style='width:100%;'><p class='btn ' style='width:100%;'>Flip the board</p></div>
     {%if current_user.is_in_game(game)%}
-        <div style='width:100%;'><p class='btn btn-danger' style='width:100%;'>Surrender</p>
+        <div id='surrender-button' style='width:100%;'><p class='btn btn-danger' style='width:100%;'>Surrender</p>
         </div>
     {%endif%}
-    <ul class='list-group' id='game-history-list'>
+    <ul class='list-group scrollable' style='max-height:80vh;' id='game-history-list'>
     </ul>
     </div>
 {%endblock%}

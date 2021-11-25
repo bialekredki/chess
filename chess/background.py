@@ -16,8 +16,9 @@ def on_raw_message(body):
 
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender:Celery, **kwargs):
-    logger.info('Starting periodic tasks configuration on %s', sender)
-    logger.info('[BACKGROUND][PERIODIC] starting periodic %s', sender.add_periodic_task(5.0, check_expired_games.s()))
+    pass
+    #logger.info('Starting periodic tasks configuration on %s', sender)
+    #logger.info('[BACKGROUND][PERIODIC] starting periodic %s', sender.add_periodic_task(5.0, check_expired_games.s()))
 
 @celery.task(bind=True)
 def matchmaker_task(self, r:dict,requests:'list[dict]'):
@@ -42,4 +43,13 @@ def check_expired_games():
     games:list = Game.query.filter(Game.time_limit != - 1).all()
     logger.info('%s', games)
     for game in games:
-        logger.info('%s', game)
+        logger.info('%s', game.is_expired())
+
+
+@celery.task
+def check_expired_game_inviations():
+    pass
+
+@celery.task
+def game_tick(id:int): 
+    pass
