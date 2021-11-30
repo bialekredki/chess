@@ -96,3 +96,24 @@ class GameConclusionFlag(enum.Enum):
     @classmethod
     def ids(self):
         return [flag['id'] for flag in GameConclusionFlag]
+
+class ChessTitle(enum.Enum):
+    NONE = {'id': 0, 'name': 'Grandmaster', 'short': ''}
+    GRANDMASTER = {'id': 1, 'name': 'Grandmaster', 'short': 'GM'}
+    INTERNATIONAL_MASTER = {'id': 2, 'name': 'International Master', 'short': 'IM'}
+    FIDE_MASTER = {'id':3, 'name': 'FIDE Master', 'short': 'FM'}
+    CANDIDATE_MASTER = {'id': 4, 'name': 'Candidate Master', 'short': 'CM'}
+    W_GRANDMASTER = {'id': 5, 'name': 'Woman Grandmaster', 'short': 'WGM'}
+    W_INTERNATIONAL_MASTER = {'id': 6, 'name':'Woman International Master', 'short':'WIM'}
+    W_FIDE_MASTER = {'id':7, 'name': 'Woman FIDE Master', 'short': 'WFM'}
+    W_CANDIDATE_MASTER = {'id': 8, 'name': 'Woman Candidate Master', 'short': 'WCM'}
+
+    @classmethod
+    def by_id(self, id:int):
+        for e in self:
+            if id == e.value.get('id'): return e 
+
+    def id(self) -> int: return self.value.get('id')
+    def name(self) -> str: return self.value.get('name')
+    def short(self) -> str: return self.value.get('short')
+

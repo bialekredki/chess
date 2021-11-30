@@ -176,3 +176,35 @@
     background-color: black;
     color: white;
 }
+
+.black.moves>li {
+    animation: black_move 1s infinite linear;
+}
+
+.white.moves>li {
+    animation: white_move 1s infinite linear;
+}
+
+@keyframes black_move {
+    from {
+        background-color: black;
+    }
+    to {
+        background-color: rgb(53, 53, 53);
+    }
+}
+
+@keyframes white_move {
+    from {
+        background-color: white;
+    }
+    to {
+        background-color: rgb(168, 168, 168);
+    }
+}
+
+.player-title {
+    border-radius: 35%;
+    background-color: rgb(168, 43, 43);
+    padding: 3px;
+}

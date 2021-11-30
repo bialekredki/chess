@@ -9,80 +9,9 @@
 {{super()}}
 <script src="{{url_for('static', filename='js/game.js')}}"></script>
 <script>
-var socket = io(`/game-${"{{game.id}}"}`);
 var sound = new Howl({
       src: ["{{url_for('static', filename='audio/move.wav')}}"]
     });
-var main_socket = io();
-    main_socket.on('connect', function() {
-        console.log('Socket connected');
-        $.get("{{url_for('api_game_colour', id=game.id)}}").done(function(e) {
-            colour=e;
-        })
-        
-    });
-    main_socket.emit('getgame', {id:"{{game.id}}"});
-        {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
-            main_socket.emit('getcolour' ,{id:"{{game.id}}", player_id:"{{current_user.id}}"}, namespace=`/g${"{{game.id}}"}`)
-        {%endif%}
-
-    {%if current_user.id == game.host_id or current_user.id == game.guest_id%}
-            socket.on('setcolour', (json) => {
-                colour = json['colour'];
-                console.log(json);
-        });
-    {%endif%}
-    socket.on('setpossiblemoves', (json) => {
-        if(json['to'] != "{{current_user.id}}") return;
-        json['moves'].forEach((move)=>{
-            let tile = tiles[(7-move[0])*8+move[1]]
-            console.log(tile)
-            tile.alpha = 0.5;
-        });
-    });
-    socket.on('move', (json) =>{
-        let to = json['to'];
-        let from = json['from'];
-        let tile = tiles[(7-to[0])*8+to[1]];
-        let piece;
-        console.log(json)
-        for(let i = 0; i<sprites.length; i++){
-            if(sprites[i].location[0] == from[0] && sprites[i].location[1] == from[1]){
-                piece = sprites[i];
-                console.log(location);
-                console.log(sprites[i].location)
-                break;
-            }
-        }
-        console.log(piece)
-        move(piece, tile)
-        piece.alpha = 1;
-        app.lastObj = tile;
-    });
-    socket.on('setgame', (json)=>{
-        console.log(json)
-        console.time('x')
-        sound.play();
-        switch_turn(json['turn']);
-        json['tiles'].forEach((row,r)=>{
-            row.forEach((col,c) => {
-                game_state.at(r,c).piece = col['piece'];
-                game_state.at(r,c).colour = col['colour'];
-                game_state.at(r,c).moved = col['moved'];
-            });
-        });
-        $('.progress-bar').css('width', `${json['eval']}%`);
-        if (container.children.length > 0){
-            console.log(container.children.length)
-            container.removeChildren();
-            delete tiles;
-            delete sprites;
-        }
-        [tiles,sprites] = renderApp(app,game_state,textures)
-        console.timeEnd('x')
-        populateHistory()
-    });
-
 
     getSpriteAt = (location) => {
         let piece = null;
@@ -96,42 +25,6 @@ var main_socket = io();
     }
 
 
-    pieceOnDragBegin = (event) => {
-        let target = event.target;
-        if(target.objName == 'piece'){
-            if(app.lastObj && app.lastObj.objName == 'piece'){
-                app.lastObj.alpha = 1;
-                tiles.forEach((tile)=>{
-                    tile.alpha = 1;
-                });
-                console.log(colour)
-                if(game_state.at(app.lastObj.location[0], app.lastObj.location[1]).colour == colour && game_state.at(target.location[0], target.location[1]).colour != colour){
-                    main_socket.emit('confirmmove', {
-                        game: game_state,
-                        to: target.location,
-                        from: app.lastObj.location,
-                        gameid: "{{game.id}}"
-                    })
-                    return;
-                }
-            }
-            app.lastObj = target;
-            target.alpha = 0.7;
-            main_socket.emit('getpossiblemoves', {
-                game: game_state,
-                from: target.location,
-                gameid: "{{game.id}}"
-            })
-        }
-        if(target.objName == 'tile' && app.lastObj.objName == 'piece'){
-            main_socket.emit('confirmmove', {
-                game: game_state,
-                to: target.location,
-                from: app.lastObj.location,
-                gameid: "{{game.id}}"
-            })
-        }
-    }
 
     rowColToXY = (row,col,size_x,size_y) => {
         return [(7-row)*size_y,col*size_x];
@@ -143,28 +36,7 @@ var main_socket = io();
         });
     }
 
-    move = (piece,tile) => {
-        console.log(piece)
-        let size_x = Math.floor(app.renderer.gl.drawingBufferWidth/8);
-        let size_y = Math.floor(app.renderer.gl.drawingBufferHeight/8);
-        let gs_tile_src = game_state.tiles[piece.location[0]][[piece.location[1]]];
-        let gs_tile_dst = game_state.tiles[tile.location[0]][[tile.location[1]]];
-        let taken_piece = getSpriteAt(tile.location);
-        if(taken_piece != null){
-            container.removeChild(taken_piece);
-            removeSprite(taken_piece);
-        }
-        [y,x] = rowColToXY(tile.location[0], tile.location[1], size_x, size_y);
-        piece.x = x + size_x/2;
-        piece.y = y + size_y/2;
-        gs_tile_dst.piece = gs_tile_src.piece;
-        gs_tile_dst.colour = gs_tile_src.colour;
-        gs_tile_dst.moved = true;
-        gs_tile_src.piece = 0;
-        gs_tile_src.colour = false;
-        gs_tile_src.moved = false;
-        piece.location = tile.location;
-    }
+
     renderApp = (app, game,textures) => {
         let start_x = 0;
         let start_y = 0;
@@ -310,7 +182,8 @@ var main_socket = io();
     $('#up-user-banner').children().addClass('black')
     $('#down-user-banner').children().addClass('white')
 
-
+    let analyse_data = null;
+    $.get("{{url_for('api_analyse', id=game.id)}}").done((data)=>{analyse_data = data;})
     
 
         
@@ -344,12 +217,10 @@ var main_socket = io();
 
 {%block rightside%}
     <div id='side-panel' class='panel' style='height:100vh;'>
-    {%if game.show_eval_bar%}
-        <div class="progress">
-            <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
-            </div>  
-        </div>
-    {%endif%}
+     <div class="progress">
+        <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
+        </div>  
+    </div>
     <div id='clock'></div>
     <div id='flip-board-button' style='width:100%;'><p class='btn ' style='width:100%;'>Flip the board</p></div>
     {%if current_user.is_in_game(game)%}

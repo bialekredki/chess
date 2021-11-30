@@ -4,6 +4,9 @@ from chess.game_options import PlayerMovePermission
 from chess.AI import EvaluationMethod, StockfishIntegrationAI, get_ai
 from chess.game import Game as ChessGame, Move, PieceType
 from flask_login import current_user
+from flask_socketio import rooms, join_room
+from flask import request
+
 
 @socketio.on('getgame')
 def set_game(js,methods='GET'):
@@ -14,6 +17,7 @@ def set_game(js,methods='GET'):
     sf = StockfishIntegrationAI(game.get_current_state().to_fen())
     if game.show_eval_bar:  result['eval'] = sf.get_eval(EvaluationMethod.PERCENTAGE)
     result['ended'] = sf.has_ended()
+    result['turn'] = game.get_current_state().is_white_turn()
     socketio.emit('setgame', result, namespace=f'/game-{game.id}')
 
 @socketio.on('getcolour')
@@ -25,20 +29,19 @@ def set_colour(js,methods='GET'):
 
 @socketio.on('getpossiblemoves')
 def get_possible_moves(js, methods=['GET']):
+    response_object = dict()
+    response_object['to'] = current_user.id
+    response_object['moves'] = list()
     id = js['gameid']
     game:Game = Game.query.filter_by(id=id).first()
     sf = StockfishIntegrationAI(game.get_current_state().to_fen())
     if sf.has_ended():   
-        gs = game.get_current_state().turn
-        game.state = 1 if gs == 'b' else 2
-        print(game.state)
-        db.session.commit()
-        socketio.emit('setpossiblemoves', {'moves': [], 'to':current_user.id}, namespace=f'/game-{game.id}')
+        socketio.emit('setpossiblemoves', response_object, namespace=f'/game-{game.id}')
         return
     chess_game = ChessGame(game.game_state[-1].to_list(), game.game_state[-1].to_fen())
-    if current_user.id != game.host_id and current_user.id != game.guest_id:
-        return #TODO: Handle discrepancies on server-client
-    socketio.emit('setpossiblemoves', {'moves': [move.jsonify()['to'] for move in chess_game.get_moves(js['from'])], 'to':current_user.id}, namespace=f'/game-{game.id}')
+    for move in chess_game.get_moves(js['from']):
+        if sf.is_possible(move.algebraic()): response_object['moves'].append(move.jsonify()['to'])
+    socketio.emit('setpossiblemoves', response_object, namespace=f'/game-{game.id}')
 
 
 @socketio.on('confirmmove')

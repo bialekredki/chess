@@ -8,6 +8,7 @@ from flask_socketio import SocketIO
 from flask_mail import Mail
 from logging.config import dictConfig
 from celery import Celery
+from flask_httpauth import HTTPBasicAuth
 
 dictConfig({
     'version': 1,
@@ -51,10 +52,11 @@ login.login_view = 'login'
 bootstrap = Bootstrap(app)
 socketio = SocketIO(app)
 mail = Mail(app)
+auth = HTTPBasicAuth()
 x = None
 if __name__ == '__main__':
     socketio.run(app, debug=True)
 
-from chess import routes, models, real_time_routes
+from chess import routes, models, real_time_routes, api
 from chess.emailtoken import game_socket_token
 app.jinja_env.globals.update(game_url=game_socket_token)

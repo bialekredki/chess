@@ -3,6 +3,7 @@ from flask.templating import render_template
 
 from sqlalchemy.orm import backref
 from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy.ext.hybrid import hybrid_property
 from chess import db, app
 import math
 from datetime import datetime
@@ -10,12 +11,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from chess import login
 from chess.elo import expected_score, k_factor
-from chess.game_options import GameConclusionFlag, GameFormat, PlayerMovePermission
+from chess.game_options import GameConclusionFlag, GameFormat, PlayerMovePermission, ChessTitle
 from chess.geolocation import country_alpha2_to_name
 from chess.utils import round_datetime
 from chess.game import Game as ChessGame, PieceType, Tile, Move
 from chess.AI import StockfishIntegrationAI, AI, PREFERRED_INTEGRATION, get_ai
 from typing import Union
+from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
 @login.user_loader
 def load_user(id):
@@ -37,6 +39,9 @@ class ChessBoardTheme(db.Model):
     black_tile_colour = db.Column(db.Integer)
     white_tile_colour = db.Column(db.Integer)
 
+    def jsonify(self):
+        return {'name': self.name, 'piece_set': self.piece_set, 'black_tile_colour': self.black_tile_colour, 'white_tile_colour': self.white_tile_colour}
+
 
 
 class ITimeStampedModel(db.Model):
@@ -57,6 +62,14 @@ class ITimeStampedModel(db.Model):
 
     def get_timedelta_creation(self): 
         return datetime.utcnow() - self.timestamp_creation
+
+    def HTML(self) -> str:
+        result = '<p>'
+        for k, v in self.__dict__.items():
+            result  += f'{k}:{v}\n'
+        result += '</p>'
+        return result
+
 
 class IActivityModel(db.Model):
     __abstract__ = True
@@ -87,9 +100,26 @@ class User(UserMixin, ITimeStampedModel):
     private = db.Column(db.Boolean)
     country = db.Column(db.String(8))
     ratings = db.relationship("EloUserRating", back_populates="user")
+    title = db.Column(db.Integer)
 
     def __repr__(self):
         return f'<User {self.username}>'
+
+    def generate_auth_token(self,expiration=6000):
+        serializer = TimedJSONWebSignatureSerializer(app.config['SECRET_KEY'], expires_in=expiration)
+        return serializer.dumps({'id': self.id})
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = TimedJSONWebSignatureSerializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except SignatureExpired:
+            return None # valid token, but expired
+        except BadSignature:
+            return None # invalid token
+        user = User.query.get(data['id'])
+        return user
 
     def to_html_table_row(self):
         return render_template('user_table_row.html',user=self)
@@ -153,6 +183,7 @@ class User(UserMixin, ITimeStampedModel):
         db.session.commit()
 
     def set_theme(self, theme:str):
+        if ChessBoardTheme.query.get(theme) is None: raise ValueError(f'{self}{__name__} There is no {theme} theme')
         self.theme = theme
         db.session.commit()
 
@@ -199,6 +230,14 @@ class User(UserMixin, ITimeStampedModel):
     def update_rating(self, rating:int, format_name:str='rapid'):
         self.get_current_rating().update(format_name, rating)
 
+    def get_title(self) -> ChessTitle:
+        return ChessTitle.by_id(self.title)
+
+    def get_title_name(self) -> str:
+        return self.get_title().name()
+    
+    def get_title_short(self) -> str:
+        return self.get_title().short()
 
 class BlogPost(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
@@ -458,6 +497,10 @@ class Game(ITimeStampedModel):
         if set: self.state = flag.id()
         return flag
 
+    def get_moves_count(self) -> int: return len(self.game_state)//2
+
+    def is_timed(self) -> bool: return self.time_limit != -1
+
 
 class RecoveryTry(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
@@ -622,6 +665,10 @@ class EloUserRating(ITimeStampedModel):
         elif name == 'puzzles': self.blitz = new_val 
         db.session.commit()
         print(self.jsonify())
+
+    @staticmethod
+    def names() -> list:
+        return ['rapid', 'blitz', 'standard', 'bullet', 'puzzles']
 
     def jsonify(self) -> dict:
         return {'created':self.timestamp_creation,

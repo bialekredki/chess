@@ -12,7 +12,7 @@ from flask import render_template, redirect, url_for, request
 from chess.AI import AI_INTEGRATIONS_NAMES_LIST, StockfishIntegrationAI, StupidAI, get_ai
 from chess.forms import ForgotPasswordForm, LoginForm, RegisterForm, SettingsForm
 from chess.game import Move, MovesOrdering, PieceType
-from chess.game_options import GameFormat, GameOption
+from chess.game_options import GameFormat, GameOption, ChessTitle
 from chess.game import Game as ChessGame
 from chess.geolocation import get_country_from_ip
 from chess.models import BlogPost, BlogPostComment, ChessBoardTheme, GameState, MatchmakerRequest, Message, RecoveryTry, User, Game
@@ -28,6 +28,7 @@ from fuzzywuzzy import fuzz
 import os.path
 from chess.mail import send_mail
 from chess.background import check_expired_games, on_raw_message, matchmaker_task
+from chess.analysis import classify_moves
 
 
 
@@ -159,6 +160,7 @@ def create_account():
         user.set_password(form.password.data)
         user.country = get_country_from_ip(request.remote_addr)
         user.add_rating()
+        user.title = ChessTitle.NONE.id()
         db.session.add(user)
         db.session.commit()
         token = generate_email_token(user.email)
@@ -599,3 +601,14 @@ def api_game_colour(id):
     if game.white_player().id == current_user.id: return (jsonify(True),200)
     elif game.black_player().id == current_user.id: return (jsonify(False), 200)
     else: return (jsonify(None), 200)
+
+
+@app.route('/analyse/<id>', methods=['GET'])
+@login_required
+def analyse(id):
+    theme:ChessBoardTheme = ChessBoardTheme.query.filter_by(name=current_user.theme).first_or_404()
+    return render_template('analysis.html', game=Game.query.filter_by(id=id).first_or_404(), theme=theme)
+
+@app.route('/api/analyse/<id>', methods=['GET'])
+def api_analyse(id):
+    return (jsonify(classify_moves(Game.query.filter_by(id=id).first_or_404())),200)

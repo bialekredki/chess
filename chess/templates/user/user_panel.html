@@ -9,7 +9,11 @@
         <input id='img-file-input' type='file' onchange='submit_img(this)' style='display:none;'/>
     {%endif%}
     {%set imgfile = "/img/flags/flags/1x1/{}.svg".format(user.country.lower())%}
-    <div class="panel-heading"><h5 class="panel-title"><img src="{{url_for('static', filename=imgfile)}}" width='16' height='16' style='border:1px solid black;' title={{user.countryname()}}>{{user.username}}
+    <div class="panel-heading"><h5 class="panel-title"><img src="{{url_for('static', filename=imgfile)}}" width='16' height='16' style='border:1px solid black;' title={{user.countryname()}}>
+    {%if user.title != 0%}
+    <span class='player-title'>{{user.get_title_short()}}</span>
+    {%endif%}
+    {{user.username}}
     {%if user.name%}
     <br>
     ({{user.name}})
