@@ -9,6 +9,7 @@ PREFERRED_INTEGRATION = 'Stockfish-9'
 class EvaluationMethod(Enum):
     CENTIPAWN = 0
     PERCENTAGE = 1
+    ALL = 2
 
 def get_ai(name:str,fen:str=None):
     if name == 'Stupid':
@@ -31,8 +32,8 @@ class StupidAI(AI):
 class StockfishIntegrationAI(AI):
     stockfish_path = './ai/bin/stockfish'
 
-    def __init__(self,FEN:str,level:int=15):
-        self.engine = Stockfish(self.stockfish_path)
+    def __init__(self,FEN:str,level:int=15, parameters:dict=None):
+        self.engine = Stockfish(self.stockfish_path, parameters=parameters)
         self.engine.set_fen_position(FEN, False)
         self.engine.set_skill_level(level)
 
@@ -58,3 +59,4 @@ class StockfishIntegrationAI(AI):
         else: centipawn = centipawn['value']
         if method == EvaluationMethod.CENTIPAWN: return centipawn
         elif method == EvaluationMethod.PERCENTAGE: return 1 / (1+10**(-(centipawn/100)/4))
+        else: return centipawn, 1 / (1+10**(-(centipawn/100)/4))

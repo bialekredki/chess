@@ -56,7 +56,6 @@ var sound = new Howl({
                 tiles.at(-1).interactive = true;
                 tiles.at(-1).objName = 'tile'
                 tiles.at(-1).location = [row,col];
-                tiles.at(-1).on('pointerdown', pieceOnDragBegin)
                 if(game.isEmpty(row,col)) {
                     start_x += size_x;
                     continue;
@@ -73,7 +72,6 @@ var sound = new Howl({
                 sprites.at(-1).objName = 'piece';
                 sprites.at(-1).colour = colour;
                 sprites.at(-1).location = [row,col];
-                sprites.at(-1) .on('pointerdown', pieceOnDragBegin)
                 start_x += size_x;
             }
             start_y += size_y;
@@ -157,17 +155,26 @@ var sound = new Howl({
         $('#down-user-banner').append(up);
     })
 
-    populateHistory = ()=>{
-        $('#game-history-list').children().each(function(index,value, array) {
-            $(value).remove();
-            console.log(value)
-            })
-        $.get("{{url_for('api_game_history', id=game.id)}}").done((data)=>{
-        Object.entries(data).forEach(function(e) {
-            $('#game-history-list').append(`<li class='list-group-item'>${e[0]} ${e[1]}</li>`)
-        })
-    })
+    stateToHTMLList = (state, i) => {
+        let colour = null;
+        if (state['colour']) colour='white';
+        else colour='black';
+        return `<li class='list-group-item analyse-state ${colour}' id='analyse-state-${i}'>${state['move']} ${state['eval']['cp']}</li>`
     }
+
+    populateHistory = ()=>{
+        console.log(analyse_data)
+        Object.entries(analyse_data).forEach(function(e) {
+            let state = e[1];
+            if(state['move'] == null) return;
+            $('#game-history-list').append(stateToHTMLList(state, e[0]));
+        })
+    }
+
+    splitStateClassName = (className) => {
+        return className.split('-')[2];
+    }
+
     switch_turn = (turn) => {
         if(turn){
             $('.black').removeClass('moves');
@@ -178,12 +185,23 @@ var sound = new Howl({
             $('.black').addClass('moves');
         }
     };
-    populateHistory()
     $('#up-user-banner').children().addClass('black')
     $('#down-user-banner').children().addClass('white')
-
     let analyse_data = null;
-    $.get("{{url_for('api_analyse', id=game.id)}}").done((data)=>{analyse_data = data;})
+    $.get("{{url_for('api_analyse', id=game.id)}}").done((data)=>{
+        analyse_data = data;
+        populateHistory();
+        game_state.set(analyse_data['0']['tiles'])
+        renderApp(app, game_state, textures);
+        $('.progress-bar').css('width', `${analyse_data['0']['eval']['percentage']}%`);
+        $('.analyse-state').click(function(e) {
+            console.log(e);
+            let id = splitStateClassName(e.target.id);
+            game_state.set(analyse_data[id]['tiles'])
+            renderApp(app, game_state, textures);
+            $('.progress-bar').css('width', `${analyse_data[id]['eval']['percentage']}%`);
+        });
+        })
     
 
         

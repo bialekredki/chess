@@ -131,4 +131,14 @@ class Game {
             if (rows > 5) this.setRowColour(rows, false);
         }
     }
+
+    set(tiles) {
+        tiles.forEach((row, r) => {
+            row.forEach((col, c) => {
+                game_state.at(r, c).piece = col['piece'];
+                game_state.at(r, c).colour = col['colour'];
+                game_state.at(r, c).moved = col['moved'];
+            });
+        });
+    }
 }

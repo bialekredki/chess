@@ -31,9 +31,12 @@ def classify_moves(game:Game) -> None:
     moves = list()
     all = list()
     for i,state in enumerate(game.game_state):
-        engine = StockfishIntegrationAI(state.to_fen())
-        cp = engine.get_eval(EvaluationMethod.CENTIPAWN)/100
-        evals.append(cp)
+        engine = StockfishIntegrationAI(state.to_fen(), parameters={"Threads": 3, "Minimum Thinking Time": 60, 'Contempt': 1, 'Ponder': True})
+        engine.engine.set_depth(15)
+        print(engine.engine.get_parameters())
+        print(engine.engine.get_evaluation())
+        cp = engine.get_eval(EvaluationMethod.ALL)
+        evals.append({'cp': cp[0]/100, 'percentage': cp[1]*100})
         print(evals[-1])
         now = ChessGame(state.to_list(), state.to_fen())
         all.append({'fen': state.to_fen(), 'eval': evals[i], 'tiles': state.to_list()})
@@ -41,9 +44,10 @@ def classify_moves(game:Game) -> None:
             continue
         prev = ChessGame(game.game_state[i-1].to_list(), game.game_state[i-1].to_fen())
         moves.append(now.get_moves_between(prev))
-        change:int = evals[i]-evals[i-1]
+        change:int = evals[i]['cp']-evals[i-1]['cp']
         if game.game_state[i-1].is_black_turn(): change *= -1
         moves_classification.append(ChessMoveClassification.by_change(change))
+        all[-1]['colour'] = game.game_state[i-1].is_white_turn()
         all[-1]['move'] = moves[-1]
         all[-1]['classification'] = moves_classification[-1].name()
     return all
