@@ -28,7 +28,7 @@ from fuzzywuzzy import fuzz
 import os.path
 from chess.mail import send_mail
 from chess.background import check_expired_games, on_raw_message, matchmaker_task
-from chess.analysis import classify_moves
+from chess.analysis import  full_analyse, partial_analyse
 
 
 
@@ -611,4 +611,13 @@ def analyse(id):
 
 @app.route('/api/analyse/<id>', methods=['GET'])
 def api_analyse(id):
-    return (jsonify(classify_moves(Game.query.filter_by(id=id).first_or_404())),200)
+    print(request.args)
+    if 'state' not in request.args:
+        return (jsonify(full_analyse(Game.query.filter_by(id=id).first_or_404())),200)
+    depth:int = 5 if 'depth' not in request.args else request.args.get('depth')
+    return (jsonify(partial_analyse(Game.query.filter_by(id=id).first_or_404().game_state[int(request.args.get('state'))], depth=depth)),200)
+
+@app.route('/api/game/time', methods=['GET'])
+def api_game_time():
+    game:Game = Game.query.get(request.args.get('id'))
+    return (jsonify((game.get_time_left_str(True), game.get_time_left_str(False))), 200)

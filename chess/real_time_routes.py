@@ -1,4 +1,5 @@
 from chess import app, db, socketio
+from flask_login.utils import login_required
 from chess.models import User, Game, GameState
 from chess.game_options import PlayerMovePermission
 from chess.AI import EvaluationMethod, StockfishIntegrationAI, get_ai
@@ -67,8 +68,10 @@ def confirm_move(js, methods='GET'):
         response_object['eval'] = game.evaluate()
     print('STATE ', game.state)
     response_object['tiles'] = game.get_current_state().to_list()
+    if game.is_timed(): response_object['time_left'] = (game.get_time_left_str(True), game.get_time_left_str(False))
     db.session.commit()
     socketio.emit('setgame', response_object, namespace=f'/game-{game.id}')
+
 
 """@socketio.on('confirmmove')
 def confirm_move(js, methods='GET'):

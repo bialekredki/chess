@@ -33,25 +33,46 @@ liked_table = db.Table('liked_posts',
 
 
 class ChessBoardTheme(db.Model):
+    """ORM Class representing board theme. It's attributes represent piece_set to be used, which should be 60x60 png icon set on the server as well as colours used to render chess board on clinets side.
+    This class inherits from SQLAlchemy db.Model and it's not meant to have any relationship as it should be extracted via it's primary key ie name.
+    """
     __tablename__ = 'chess_board_theme'
     name = db.Column(db.String(32), primary_key=True)
     piece_set = db.Column(db.String(32))
     black_tile_colour = db.Column(db.Integer)
     white_tile_colour = db.Column(db.Integer)
 
-    def jsonify(self):
+    def jsonify(self) -> dict:
+        """Returns an dictionary representation of the model. Can be safely sent via HTTP response.
+
+        Returns:
+            dict: Dict representation of the model.
+        """
         return {'name': self.name, 'piece_set': self.piece_set, 'black_tile_colour': self.black_tile_colour, 'white_tile_colour': self.white_tile_colour}
 
 
 
 class ITimeStampedModel(db.Model):
+    """An abstract ORM class. It's used to store information about object creation. On it's creation it automatically assignes timestamp_creation attribute to datetime.utcnow()
+    This class inherits from SQLAlchemy db.Model and it's defined as abstract meaning it can only be used via means of inheritance and can't have any kind of real representation.
+    """
     __abstract__ = True
     timestamp_creation = db.Column(db.DateTime(128), default=datetime.utcnow)
 
-    def get_creation_stamp(self):
+    def get_creation_stamp(self) -> datetime:
+        """Return datetime object of timestamp_creation.
+
+        Returns:
+            datetime: timestamp_creation
+        """
         return self.timestamp_creation
 
-    def set_creation_stamp(self,timestamp=datetime.utcnow):
+    def set_creation_stamp(self,timestamp:datetime=datetime.utcnow):
+        """Sets timestamp_creation value to given datetime value. By default sets it to datetime.utcnow(). Keep in mind that timestamp_creation is set automatically when object is created in the database.
+
+        Args:
+            timestamp (datetime, optional): A datetime object. Defaults to datetime.utcnow.
+        """
         self.timestamp_creation = timestamp
 
     def get_human_creation_stamp(self):
@@ -501,6 +522,47 @@ class Game(ITimeStampedModel):
 
     def is_timed(self) -> bool: return self.time_limit != -1
 
+    def get_time_passed(self, colour:bool) -> int: 
+        if not self.is_timed(): return None
+        time:float = 0
+        for i in range(len(self.game_state)):
+            if i == 0: continue
+            if colour and i % 2 != 0: time += self.get_time_spent_on_move(i)
+            elif not colour and i % 2 == 0: time += self.get_time_spent_on_move(i)
+        return time
+
+    def get_time_spent_on_move(self, move:int) -> int:
+        if not self.is_timed(): return None
+        try:
+            return (self.game_state[move].get_creation_stamp() - self.game_state[move-1].get_creation_stamp()).total_seconds()
+        except: return None
+
+
+    def get_time_left(self, colour:bool) -> int: 
+        if not self.is_timed(): return None
+        overhead:int = 0
+        if colour and self.get_current_state().is_white_turn() or not colour and self.get_current_state().is_black_turn(): 
+            overhead = (datetime.utcnow() - self.get_current_state().get_creation_stamp()).total_seconds()
+        print('OVERHEAD', overhead)
+        t = self.time_limit - self.get_time_passed(colour) - overhead
+        return t if t >= 0 else 0
+
+    def get_time_left_str(self, colour:bool) -> str:
+        if not self.is_timed(): return None
+        time = {'h': 0, 'm':0, 's':0}
+        secs = self.get_time_left(colour)
+        time['h'] = int(secs // (60*60))
+        time['m'] = int((secs - (time['h'] * 3600)) // 60)
+        time['s'] = int(secs - (time['h'] * 3600) - (time['m'] * 60))
+        print(time)
+        print(secs)
+        include_hours = time['h'] != 0
+        for k,v in time.items():
+            if v < 0: v = f'0{v}'
+            else: v = str(v)
+        if not include_hours: return f"{time['m']}:{time['s']}"
+        return f"{time['h']}:{time['m']}:{time['s']}"
+
 
 class RecoveryTry(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
@@ -508,7 +570,7 @@ class RecoveryTry(ITimeStampedModel):
     ipaddr = db.Column(db.String(64))
     is_confirmed = db.Column(db.Boolean, default=False)
 
-class GameState(db.Model):
+class GameState(ITimeStampedModel):
     id = db.Column(db.Integer, primary_key=True)
     placement = db.Column(db.String(256), default='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR')
     turn = db.Column(db.String(1), default = 'w')
@@ -625,7 +687,7 @@ class MatchmakerRequest(ITimeStampedModel):
         return True if self.user_id == mmrequest.user_id else False
 
     def fulfills_conditions(self,mmrequest):
-        user = mmrequest.user
+        user:User = mmrequest.user
         print(user)
         if self.min_rank <= user.elo <= self.max_rank and mmrequest.min_rank <= self.user.elo <= mmrequest.max_rank and self.ranked == mmrequest.ranked:
             return True

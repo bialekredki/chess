@@ -2,6 +2,7 @@ from datetime import time
 
 from celery.app.base import Celery
 from chess import app, db, socketio, celery
+from chess.game_options import GameConclusionFlag
 from chess.models import MatchmakerRequest, User, Game, GameState
 from chess.AI import StockfishIntegrationAI, get_ai
 from chess.game import Game as ChessGame, Move, PieceType
@@ -17,8 +18,8 @@ def on_raw_message(body):
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender:Celery, **kwargs):
     pass
-    #logger.info('Starting periodic tasks configuration on %s', sender)
-    #logger.info('[BACKGROUND][PERIODIC] starting periodic %s', sender.add_periodic_task(5.0, check_expired_games.s()))
+    logger.info('Starting periodic tasks configuration on %s', sender)
+    logger.info('[BACKGROUND][PERIODIC] starting periodic %s', sender.add_periodic_task(.02, check_expired_games.s()))
 
 @celery.task(bind=True)
 def matchmaker_task(self, r:dict,requests:'list[dict]'):
@@ -39,11 +40,13 @@ def matchmaker_task(self, r:dict,requests:'list[dict]'):
 
 @celery.task
 def check_expired_games():
-    logger.info('ABC')
-    games:list = Game.query.filter(Game.time_limit != - 1).all()
-    logger.info('%s', games)
+    games:list[Game] = Game.query.filter(Game.time_limit != - 1).all()
     for game in games:
-        logger.info('%s', game.is_expired())
+        if game.get_time_left(False) <= 0:
+            game.state = GameConclusionFlag.WHITE_WON.id()
+        if game.get_time_left(True) <= 0:
+            game.state = GameConclusionFlag.BLACK_WON.id()
+        db.session.commit()
 
 
 @celery.task

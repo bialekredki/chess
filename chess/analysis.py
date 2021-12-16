@@ -1,8 +1,8 @@
 
-from chess.models import Game
+from chess.models import Game, GameState
 from chess.game import Game as ChessGame
 import enum 
-from chess.AI import StockfishIntegrationAI, EvaluationMethod
+from chess.AI import AI, StockfishIntegrationAI, EvaluationMethod
 
 class ChessMoveClassification(enum.Enum):
     GENIUS = {'id': 0, 'name': 'Genius', 'eval_change': (15, 'inf')}
@@ -24,19 +24,28 @@ class ChessMoveClassification(enum.Enum):
 
     def name(self) -> str: return self.value.get('name')
 
+    def jsonify(self) -> dict: return self.value
 
-def classify_moves(game:Game) -> None:
+
+def partial_analyse(game_state:GameState, engine:AI=None, depth:int=5):
+    result_object = dict()
+    if engine is None: 
+        engine = StockfishIntegrationAI(game_state.to_fen(), parameters={"Threads": 3, "Minimum Thinking Time": 60, 'Contempt': 1, 'Ponder': True})
+        engine.engine.set_depth(depth)
+    for k,v in engine.get_eval(EvaluationMethod.ALL).items():
+        result_object[k] = v
+    result_object['depth'] = depth
+    return result_object
+ 
+def full_analyse(game:Game) -> None:
     evals = list()
     moves_classification = list()
     moves = list()
     all = list()
     for i,state in enumerate(game.game_state):
         engine = StockfishIntegrationAI(state.to_fen(), parameters={"Threads": 3, "Minimum Thinking Time": 60, 'Contempt': 1, 'Ponder': True})
-        engine.engine.set_depth(15)
-        print(engine.engine.get_parameters())
-        print(engine.engine.get_evaluation())
-        cp = engine.get_eval(EvaluationMethod.ALL)
-        evals.append({'cp': cp[0]/100, 'percentage': cp[1]*100})
+        engine.engine.set_depth(5)
+        evals.append(partial_analyse(state, engine, 5))
         print(evals[-1])
         now = ChessGame(state.to_list(), state.to_fen())
         all.append({'fen': state.to_fen(), 'eval': evals[i], 'tiles': state.to_list()})
@@ -49,7 +58,7 @@ def classify_moves(game:Game) -> None:
         moves_classification.append(ChessMoveClassification.by_change(change))
         all[-1]['colour'] = game.game_state[i-1].is_white_turn()
         all[-1]['move'] = moves[-1]
-        all[-1]['classification'] = moves_classification[-1].name()
-    return all
+        all[-1]['classification'] = moves_classification[-1].jsonify()
+    return {'depth': 5, 'states': all}
 
     

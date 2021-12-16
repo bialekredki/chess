@@ -311,7 +311,9 @@ var main_socket = io();
     $('#down-user-banner').children().addClass('white')
 
 
-    
+    this.setTimeout(()=>{
+        $.get("{{url_for('api_game_time', id=game.id)}}").done((data)=>{console.log(data);})
+    },1000)
 
         
 </script>
@@ -348,6 +350,14 @@ var main_socket = io();
         <div class="progress">
             <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="90" aria-valuemin="0" aria-valuemax="100" style="width: 100%;">
             </div>  
+        </div>
+    {%endif%}
+    {%if game.is_timed()%}
+        <div class="time" id='time-white'>
+            {{game.get_time_left_str(True)}}
+        </div>
+        <div class="time black" id='time-black'>
+            {{game.get_time_left_str(False)}}
         </div>
     {%endif%}
     <div id='clock'></div>

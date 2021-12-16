@@ -8,6 +8,7 @@
 {%block scripts%}
 {{super()}}
 <script src="{{url_for('static', filename='js/game.js')}}"></script>
+<script src="{{url_for('static', filename='js/analysis.js')}}"></script>
 <script>
 var sound = new Howl({
       src: ["{{url_for('static', filename='audio/move.wav')}}"]
@@ -155,16 +156,27 @@ var sound = new Howl({
         $('#down-user-banner').append(up);
     })
 
+    classificationToTHMLSpan = (classification) => {
+        let className = 'classification ' + classification.name.toLowerCase();
+        return `<span class='${className}'>${classification.name}</span>`
+    }
+
     stateToHTMLList = (state, i) => {
         let colour = null;
+        let eval = null;
         if (state['colour']) colour='white';
         else colour='black';
-        return `<li class='list-group-item analyse-state ${colour}' id='analyse-state-${i}'>${state['move']} ${state['eval']['cp']}</li>`
+        if(state['eval']['mate'] == null)    eval = state['eval']['cp'];
+        else if(state['eval']['mate'] == 0) eval = 'MATE';
+        else eval = 'M'+state['eval']['mate'];
+        return `<li class='list-group-item analyse-state ${colour}' id='analyse-state-${i}'>${state['move']} ${eval} ${analyse_data.classificationToTHMLSpan(i)}</li>`;
     }
+
+
 
     populateHistory = ()=>{
         console.log(analyse_data)
-        Object.entries(analyse_data).forEach(function(e) {
+        Object.entries(analyse_data['states']).forEach(function(e) {
             let state = e[1];
             if(state['move'] == null) return;
             $('#game-history-list').append(stateToHTMLList(state, e[0]));
@@ -185,21 +197,42 @@ var sound = new Howl({
             $('.black').addClass('moves');
         }
     };
+
+    
     $('#up-user-banner').children().addClass('black')
     $('#down-user-banner').children().addClass('white')
+
+    getBetterEval = (id, li,depth) => {
+        console.log(depth)
+        analyse_data.clearTimeout();
+        if (analyse_data.timeoutSID() != id) analyse_data.locked = false;
+        if (depth == null) return;
+        if(!analyse_data.locked){
+            analyse_data.locked = true;
+            $.get("{{url_for('api_analyse', id=game.id)}}", {depth:depth, state:id}).done((data)=>{
+                $(`#analyse-state-${id}`).replaceWith(stateToHTMLList({eval:data, colour:analyse_data.getStateColour(id), move:analyse_data.getStateMove(id) }, id));
+                analyse_data.updateEval(id, data);
+                analyse_data.locked = false;
+                analyse_data.timeout = {tid: setTimeout(getBetterEval(id,li,analyse_data.getStateEvalDepthIncremented(id)), 300), sid:id}
+            });
+        }
+    }
+
     let analyse_data = null;
     $.get("{{url_for('api_analyse', id=game.id)}}").done((data)=>{
-        analyse_data = data;
+        console.log(data);
+        analyse_data = new Analysis(data);
         populateHistory();
-        game_state.set(analyse_data['0']['tiles'])
+        game_state.set(analyse_data.getStateTiles(0));
         renderApp(app, game_state, textures);
-        $('.progress-bar').css('width', `${analyse_data['0']['eval']['percentage']}%`);
-        $('.analyse-state').click(function(e) {
-            console.log(e);
+        $('.progress-bar').css('width', `${analyse_data.getStateEval(0).percentage}%`);
+
+        $('ul').on('click', 'li', function(e) {
             let id = splitStateClassName(e.target.id);
-            game_state.set(analyse_data[id]['tiles'])
+            game_state.set(analyse_data.getStateTiles(id))
             renderApp(app, game_state, textures);
-            $('.progress-bar').css('width', `${analyse_data[id]['eval']['percentage']}%`);
+            $('.progress-bar').css('width', `${analyse_data.getStateEval(0).percentage}%`);
+            getBetterEval(id, e.target, analyse_data.getStateEvalDepthIncremented(id));
         });
         })
     
@@ -241,10 +274,6 @@ var sound = new Howl({
     </div>
     <div id='clock'></div>
     <div id='flip-board-button' style='width:100%;'><p class='btn ' style='width:100%;'>Flip the board</p></div>
-    {%if current_user.is_in_game(game)%}
-        <div id='surrender-button' style='width:100%;'><p class='btn btn-danger' style='width:100%;'>Surrender</p>
-        </div>
-    {%endif%}
     <ul class='list-group scrollable' style='max-height:80vh;' id='game-history-list'>
     </ul>
     </div>

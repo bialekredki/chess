@@ -9,7 +9,8 @@ PREFERRED_INTEGRATION = 'Stockfish-9'
 class EvaluationMethod(Enum):
     CENTIPAWN = 0
     PERCENTAGE = 1
-    ALL = 2
+    MATE = 2
+    ALL = 3
 
 def get_ai(name:str,fen:str=None):
     if name == 'Stupid':
@@ -24,6 +25,14 @@ class AI():
         pass
     def is_possible(self,move:str) -> bool:
         pass
+
+    def eval_mate_to_centipawns(self, mate:int) -> int:
+        return 10000-(100*mate) if mate >= 0 else 10000
+
+    def eval_to_percent(self, eval:dict) -> float:
+        if eval['type'] == 'cp': val = eval['value']
+        else: val = self.eval_mate_to_centipawns(eval['value'])
+        return 1 / (1+10**(-(val/100)/4))
 
 class StupidAI(AI):
     def make_stupid_move(self,moves:list):
@@ -54,9 +63,15 @@ class StockfishIntegrationAI(AI):
         return True if self.engine.get_best_move() is None else False
 
     def get_eval(self,method:EvaluationMethod=EvaluationMethod.PERCENTAGE)->'Union[float,int]':
-        centipawn = self.engine.get_evaluation()
-        if centipawn['type'] != 'cp': centipawn = 10000-(100*centipawn['value'])
-        else: centipawn = centipawn['value']
-        if method == EvaluationMethod.CENTIPAWN: return centipawn
-        elif method == EvaluationMethod.PERCENTAGE: return 1 / (1+10**(-(centipawn/100)/4))
-        else: return centipawn, 1 / (1+10**(-(centipawn/100)/4))
+        eval = self.engine.get_evaluation()
+        if method == EvaluationMethod.PERCENTAGE:
+            return eval['value']/100 if eval['type'] == 'cp' else 100
+        elif method == EvaluationMethod.PERCENTAGE:
+            return self.eval_to_percent(eval) * 100
+        elif method == EvaluationMethod.MATE:
+            return eval['value'] if eval['type'] == 'mate' else None
+        else:
+            return {'cp': eval['value']/100 if eval['type'] == 'cp' else self.eval_mate_to_centipawns(eval['value']),
+                'percentage': self.eval_to_percent(eval) * 100,
+                'mate': eval['value'] if eval['type'] == 'mate' else None
+            }
